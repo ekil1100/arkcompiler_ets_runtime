@@ -2096,6 +2096,9 @@ void TypeBytecodeLowering::LowerTypedTryLdGlobalByName(GateRef gate)
     }
     AddProfiling(gate);
     GateRef result = builder_.LoadBuiltinObject(static_cast<uint64_t>(builtinIndex_.GetBuiltinBoxOffset(key)));
+    GateRef traceGate = builder_.CallRuntime(glue_, RTSTUB_ID(AotDebug), acc_.GetDep(gate),
+                                                 { value, builder_.Int64(idx) }, gate);
+    builder_.SetDepend(traceGate);
     acc_.ReplaceHirAndDeleteIfException(gate, builder_.GetStateDepend(), result);
     DeleteConstDataIfNoUser(value);
 }

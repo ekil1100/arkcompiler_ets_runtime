@@ -1442,7 +1442,7 @@ private:
     bool enableOptLoopInvariantCodeMotion_ {false};
     bool enableLexenvSpecialization_ {true};
     bool enableNativeInline_ {false};
-    bool enableLoweringBuiltin_ {false};
+    bool enableLoweringBuiltin_ {true};
 };
 }  // namespace panda::ecmascript
 

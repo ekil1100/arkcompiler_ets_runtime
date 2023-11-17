@@ -51,6 +51,7 @@ class NTypeHCRLowering;
 class TSHCRLowering;
 class Variable;
 class NativeInlineLowering;
+class TypeHCRLowering;
 
 #define BINARY_ARITHMETIC_METHOD_LIST_WITH_BITWIDTH(V)                    \
     V(Int16Add, Add, MachineType::I16)                                    \
@@ -732,6 +733,7 @@ private:
     friend NTypeHCRLowering;
     friend SlowPathLowering;
     friend NativeInlineLowering;
+    friend TypeHCRLowering;
 };
 
 }  // namespace panda::ecmascript::kungfu

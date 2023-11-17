@@ -14,6 +14,7 @@
  */
 
 #include <cmath>
+#include <cstdint>
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/log.h"
 #include "ecmascript/log_wrapper.h"
@@ -602,6 +603,15 @@ DEF_RUNTIME_STUBS(CallGetPrototype)
     JSHandle<JSProxy> proxy = GetHArg<JSProxy>(argv, argc, 0);  // 0: means the zeroth parameter
 
     return JSProxy::GetPrototype(thread, proxy).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(AotDebug) {
+    RUNTIME_STUBS_HEADER(AotDebug);
+    auto offset = GetTArg(argv, argc, 0);
+    [[maybe_unused]] auto box = GetTArg(argv, argc, 1);
+    [[maybe_unused]] auto builtin = GetTArg(argv, argc, 1);
+
+    return offset;
 }
 
 DEF_RUNTIME_STUBS(Exp)

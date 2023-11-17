@@ -2153,8 +2153,12 @@ void TypeHCRLowering::LowerLoadBuiltinObject(GateRef gate)
     auto boxOffset = builtinEntriesOffset + acc_.GetIndex(gate);
     GateRef box = builder_.LoadConstOffset(VariableType::JS_POINTER(), glue, boxOffset);
     GateRef builtin = builder_.LoadConstOffset(VariableType::JS_POINTER(), box, PropertyBox::VALUE_OFFSET);
+    builder_.CallRuntime(glue, RTSTUB_ID(AotDebug), acc_.GetDep(gate), { builtin }, gate);
     auto frameState = GetFrameState(gate);
     auto isHole = builder_.TaggedIsHole(builtin);
+    GateRef traceGate = builder_.CallRuntime(glue, RTSTUB_ID(AotDebug), acc_.GetDep(gate),
+                                                 { builder_.Int64(boxOffset), box, builtin }, gate);
+    builder_.SetDepend(traceGate);
     // attributes on globalThis may change, it will cause renew a PropertyBox, the old box will be abandoned
     // so we need deopt
     builder_.DeoptCheck(isHole, frameState, DeoptType::LOADBUILTINOBJECTFAIL);

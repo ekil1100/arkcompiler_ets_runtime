@@ -1,0 +1,57 @@
+diff --git a/ecmascript/compiler/type_hcr_lowering.cpp b/ecmascript/compiler/type_hcr_lowering.cpp
+index b2c95c8f0..c519d295e 100644
+--- a/ecmascript/compiler/type_hcr_lowering.cpp
++++ b/ecmascript/compiler/type_hcr_lowering.cpp
+@@ -2153,6 +2153,8 @@ void TypeHCRLowering::LowerLoadBuiltinObject(GateRef gate)
+     auto boxOffset = builtinEntriesOffset + acc_.GetIndex(gate);
+     GateRef box = builder_.LoadConstOffset(VariableType::JS_POINTER(), glue, boxOffset);
+     GateRef builtin = builder_.LoadConstOffset(VariableType::JS_POINTER(), box, PropertyBox::VALUE_OFFSET);
++    // LowerCallRuntime(glue, gate, RTSTUB_ID(AotDebug), { builtin }, false);
++    builder_.CallRuntime(glue, RTSTUB_ID(AotDebug), acc_.GetDep(gate), args, hirGate);
+     auto frameState = GetFrameState(gate);
+     auto isHole = builder_.TaggedIsHole(builtin);
+     // attributes on globalThis may change, it will cause renew a PropertyBox, the old box will be abandoned
+diff --git a/ecmascript/js_runtime_options.h b/ecmascript/js_runtime_options.h
+index 8f86f19d4..2bf259ffa 100644
+--- a/ecmascript/js_runtime_options.h
++++ b/ecmascript/js_runtime_options.h
+@@ -1442,7 +1442,7 @@ private:
+     bool enableOptLoopInvariantCodeMotion_ {false};
+     bool enableLexenvSpecialization_ {true};
+     bool enableNativeInline_ {false};
+-    bool enableLoweringBuiltin_ {false};
++    bool enableLoweringBuiltin_ {true};
+ };
+ }  // namespace panda::ecmascript
+ 
+diff --git a/ecmascript/stubs/runtime_stubs.cpp b/ecmascript/stubs/runtime_stubs.cpp
+index 6a24b5125..a752f182e 100644
+--- a/ecmascript/stubs/runtime_stubs.cpp
++++ b/ecmascript/stubs/runtime_stubs.cpp
+@@ -604,6 +604,14 @@ DEF_RUNTIME_STUBS(CallGetPrototype)
+     return JSProxy::GetPrototype(thread, proxy).GetRawData();
+ }
+ 
++DEF_RUNTIME_STUBS(AotDebug)
++{
++    RUNTIME_STUBS_HEADER(AotDebug);
++    JSHandle<JSTaggedValue> value = GetHArg<JSTaggedValue>(argv, argc, 0);  // 0: means the zeroth parameter
++
++    return value.GetTaggedValue().GetRawData();
++}
++
+ DEF_RUNTIME_STUBS(Exp)
+ {
+     RUNTIME_STUBS_HEADER(Exp);
+diff --git a/ecmascript/stubs/runtime_stubs.h b/ecmascript/stubs/runtime_stubs.h
+index 71e601633..bfc4949fc 100644
+--- a/ecmascript/stubs/runtime_stubs.h
++++ b/ecmascript/stubs/runtime_stubs.h
+@@ -343,6 +343,7 @@ using FastCallAotEntryType = JSTaggedValue (*)(uintptr_t glue, uint32_t argc, co
+     V(LocaleCompareWithGc)                \
+     V(ArrayForEachContinue)               \
+     V(NumberDictionaryPut)                \
++    V(AotDebug)                          \
+     V(ThrowRangeError)
+ 
+ #define RUNTIME_STUB_LIST(V)                     \
