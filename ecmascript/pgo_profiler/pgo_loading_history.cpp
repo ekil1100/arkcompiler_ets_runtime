@@ -37,7 +37,8 @@ void PGOLoadingHistory::ParseFromBinary(void* buffer, SectionInfo* const info)
             timestamps.push_back(ts);
         }
 
-        LOG_ECMA(DEBUG) << TAG << id << ": " << TimestampsToString(timestamps);
+        LOG_ECMA(DEBUG) << TAG << id << "[" << timestamps.size() << "]"
+                        << ": " << TimestampsToString(timestamps);
         history_[id] = timestamps;
     }
 }
@@ -60,7 +61,8 @@ void PGOLoadingHistory::ProcessToBinary(std::fstream& fileStream, SectionInfo* c
             fileStream.write(reinterpret_cast<const char*>(&ts), sizeof(ts));
         }
 
-        LOG_ECMA(DEBUG) << TAG << id << ": " << TimestampsToString(pair.second);
+        LOG_ECMA(DEBUG) << TAG << id << "[" << pair.second.size() << "]"
+                        << ": " << TimestampsToString(pair.second);
     }
     info->size_ = static_cast<uint32_t>(fileStream.tellp()) - info->offset_;
     info->number_ = history_.size();
@@ -71,19 +73,19 @@ void PGOLoadingHistory::Merge(const PGOLoadingHistory& other)
     LOG_ECMA(DEBUG) << TAG << "merging history";
     for (const auto& pair: other.history_) {
         std::string id = pair.first;
-        LOG_ECMA(DEBUG) << TAG << id << ": " << TimestampsToString(pair.second);
+        LOG_ECMA(DEBUG) << TAG << id << "[" << pair.second.size() << "]"
+                        << ": " << TimestampsToString(pair.second);
         history_[id].insert(history_[id].end(), pair.second.begin(), pair.second.end());
     }
 }
 
 void PGOLoadingHistory::ProcessToText(std::ofstream& stream) const
 {
-    stream << DumpUtils::NEW_LINE << "Loading History:" << DumpUtils::NEW_LINE;
+    stream << DumpUtils::NEW_LINE << "PGOLoadingHistory:" << DumpUtils::NEW_LINE;
     for (const auto& pair: history_) {
         std::string id = pair.first;
-        stream << "ID " << std::dec << id << ": ";
-        stream << TimestampsToString(pair.second);
-        stream << DumpUtils::NEW_LINE;
+        stream << id << "[" << pair.second.size() << "]"
+               << ": " << TimestampsToString(pair.second) << DumpUtils::NEW_LINE;
     }
 }
 }
