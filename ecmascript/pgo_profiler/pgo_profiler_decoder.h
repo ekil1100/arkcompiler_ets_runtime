@@ -19,6 +19,7 @@
 #include "ecmascript/jspandafile/method_literal.h"
 #include "ecmascript/log.h"
 #include "ecmascript/log_wrapper.h"
+#include "ecmascript/pgo_profiler/pgo_loading_history.h"
 #include "ecmascript/pgo_profiler/pgo_profiler_info.h"
 #include "ecmascript/pgo_profiler/pgo_utils.h"
 #include "ecmascript/pgo_profiler/types/pgo_profiler_type.h"
@@ -159,6 +160,11 @@ public:
         return pandaFileInfos_;
     }
 
+    std::shared_ptr<PGOLoadingHistory> GetLoadingHistory() const
+    {
+        return loadingHistory_;
+    }
+
     bool GetAbcNameById(ApEntityId abcId, CString &abcName) const
     {
         ASSERT(header_ != nullptr);
@@ -196,6 +202,7 @@ private:
     bool externalAbcFilePool_ {false};
     std::shared_ptr<PGORecordDetailInfos> recordDetailInfos_;
     std::unique_ptr<PGORecordSimpleInfos> recordSimpleInfos_;
+    std::shared_ptr<PGOLoadingHistory> loadingHistory_;
     MemMap fileMapAddr_;
 };
 } // namespace panda::ecmascript::pgo

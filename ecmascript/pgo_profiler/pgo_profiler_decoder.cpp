@@ -20,6 +20,7 @@
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/method_literal.h"
 #include "ecmascript/log_wrapper.h"
+#include "ecmascript/pgo_profiler/pgo_loading_history.h"
 #include "ecmascript/pgo_profiler/pgo_profiler_info.h"
 #include "ecmascript/platform/file.h"
 
@@ -97,10 +98,14 @@ bool PGOProfilerDecoder::LoadFull(const std::shared_ptr<PGOAbcFilePool> &externa
         return false;
     }
     pandaFileInfos_.ParseFromBinary(addr, header_->GetPandaInfoSection());
+    if (!loadingHistory_) {
+        loadingHistory_ = std::make_shared<PGOLoadingHistory>();
+    }
+    loadingHistory_->ParseFromBinary(addr, header_->GetHistorySection());
+
     if (!recordDetailInfos_) {
         recordDetailInfos_ = std::make_shared<PGORecordDetailInfos>(hotnessThreshold_);
     }
-
     LoadAbcIdPool(externalAbcFilePool, *recordDetailInfos_, addr);
     recordDetailInfos_->ParseFromBinary(addr, header_);
     recordDetailInfos_->ResetAbcIdRemap();
@@ -146,6 +151,7 @@ bool PGOProfilerDecoder::SaveAPTextFile(const std::string &outPath)
         return false;
     }
     pandaFileInfos_.ProcessToText(fileStream);
+    loadingHistory_->ProcessToText(fileStream);
     recordDetailInfos_->ProcessToText(fileStream);
     abcFilePool_->GetPool()->ProcessToText(fileStream);
     return true;
