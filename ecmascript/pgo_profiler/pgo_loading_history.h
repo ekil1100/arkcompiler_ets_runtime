@@ -32,17 +32,18 @@ namespace panda::ecmascript::pgo {
 class PGOLoadingHistory {
 public:
     using Timestamp = std::chrono::system_clock::time_point;
-    using HistoryMap = std::unordered_map<int, std::vector<Timestamp>>;
+    using HistoryMap = std::unordered_map<std::string, std::vector<Timestamp>>;
+
     static constexpr const char* TAG = "[PGOLoadingHistory] ";
 
-    void AddHistory(int pid, const Timestamp& newTimestamp)
+    void AddHistory(std::string& id, const Timestamp& newTimestamp)
     {
-        history_[pid].push_back(newTimestamp);
+        history_[id].push_back(newTimestamp);
     }
 
-    std::vector<Timestamp> GetHistories(int pid) const
+    std::vector<Timestamp> GetHistories(std::string& id) const
     {
-        auto it = history_.find(pid);
+        auto it = history_.find(id);
         if (it != history_.end()) {
             return it->second;
         }
@@ -56,6 +57,15 @@ public:
 #else
         return static_cast<int>(getpid());
 #endif
+    }
+
+    std::string GetId(std::string& bundleName, std::string& moduleName) const
+    {
+        if (bundleName.empty() || moduleName.empty()) {
+            return std::to_string(GetPid());
+        } else {
+            return bundleName + ":" + moduleName;
+        }
     }
 
     Timestamp GetTimestamp()
