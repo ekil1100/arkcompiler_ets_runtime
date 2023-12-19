@@ -71,6 +71,7 @@ public:
     bool GetPandaFileDesc(ApEntityId abcId, CString &desc);
     void Merge(const PGORecordDetailInfos &recordInfos);
     void Merge(const PGOPandaFileInfos &pandaFileInfos);
+    void Merge(const PGOLoadingHistory& loadingHistory);
     void Merge(const PGOProfilerEncoder &encoder);
     bool VerifyPandaFileMatched(const PGOPandaFileInfos &pandaFileInfos, const std::string &base,
                                 const std::string &incoming) const;

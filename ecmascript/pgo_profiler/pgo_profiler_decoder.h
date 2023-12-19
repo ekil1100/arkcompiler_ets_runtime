@@ -23,6 +23,7 @@
 #include "ecmascript/pgo_profiler/pgo_profiler_info.h"
 #include "ecmascript/pgo_profiler/pgo_utils.h"
 #include "ecmascript/pgo_profiler/types/pgo_profiler_type.h"
+#include "ecmascript/platform/file.h"
 #include "ecmascript/platform/map.h"
 
 namespace panda::ecmascript::pgo {
@@ -180,6 +181,11 @@ public:
         }
         abcName = entry->GetData();
         return true;
+    }
+
+    bool APFileExist() const
+    {
+        return FileExist(inPath_.c_str());
     }
 
 private:

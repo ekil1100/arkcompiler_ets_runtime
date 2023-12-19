@@ -20,6 +20,7 @@
 #include <csignal>
 #include <memory>
 
+#include "ecmascript/log.h"
 #include "ecmascript/pgo_profiler/pgo_profiler.h"
 #include "ecmascript/pgo_profiler/pgo_profiler_decoder.h"
 #include "ecmascript/pgo_profiler/pgo_profiler_encoder.h"
@@ -43,10 +44,16 @@ public:
     NO_COPY_SEMANTIC(PGOProfilerManager);
     NO_MOVE_SEMANTIC(PGOProfilerManager);
 
-    void Initialize(const std::string &outDir, uint32_t hotnessThreshold)
+    void Initialize(const std::string& outDir,
+                    uint32_t hotnessThreshold,
+                    const bool isEnablePGOLoadingHistory,
+                    const int pgoRuntimeIngestTimes)
     {
         // For FA jsvm, merge with existed output file
         encoder_ = std::make_unique<PGOProfilerEncoder>(outDir, hotnessThreshold, ApGenMode::MERGE);
+        decoder_ = std::make_unique<PGOProfilerDecoder>(outDir, hotnessThreshold);
+        isEnablePGOLoadingHistory_ = isEnablePGOLoadingHistory;
+        pgoRuntimeIngestTimes_ = pgoRuntimeIngestTimes;
     }
 
     void SetBundleName(const std::string &bundleName)
@@ -246,6 +253,22 @@ private:
         if (!encoder_) {
             return false;
         }
+        if (decoder_->APFileExist()) {
+            if (!decoder_) {
+                return false;
+            }
+            if (!decoder_->LoadFull()) {
+                return false;
+            }
+            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "pgo ingested times: "
+                           << decoder_->GetLoadingHistory()->GetIngestTimes(encoder_->GetBundleName());
+            if (pgoRuntimeIngestTimes_ > 0 &&
+                decoder_->GetLoadingHistory()->GetIngestTimes(encoder_->GetBundleName()) >= pgoRuntimeIngestTimes_) {
+                LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "disable PGO for " << encoder_->GetBundleName() << " by "
+                               << "ingesting more than " << pgoRuntimeIngestTimes_ << " times. ";
+                return false;
+            }
+        }
         if (!enableSignalSaving_) {
             RegisterSavingSignal();
         }
@@ -253,10 +276,13 @@ private:
     }
 
     std::unique_ptr<PGOProfilerEncoder> encoder_;
+    std::unique_ptr<PGOProfilerDecoder> decoder_;
     RequestAotCallback requestAotCallback_;
     std::atomic_bool enableSignalSaving_ { false };
     os::memory::Mutex mutex_;
     std::set<std::shared_ptr<PGOProfiler>> profilers_;
+    bool isEnablePGOLoadingHistory_ {true};
+    int pgoRuntimeIngestTimes_ {-1};
 };
 } // namespace panda::ecmascript::pgo
 #endif  // ECMASCRIPT_PGO_PROFILER_MANAGER_H

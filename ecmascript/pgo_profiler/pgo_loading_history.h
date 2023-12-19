@@ -59,12 +59,12 @@ public:
 #endif
     }
 
-    std::string GetId(std::string& bundleName, std::string& moduleName) const
+    std::string GetId(std::string& bundleName) const
     {
-        if (bundleName.empty() || moduleName.empty()) {
+        if (bundleName.empty()) {
             return std::to_string(GetPid());
         } else {
-            return bundleName + ":" + moduleName;
+            return bundleName;
         }
     }
 
@@ -91,6 +91,25 @@ public:
     {
         for (const auto& pair: history_) {
             other[pair.first] = pair.second;
+        }
+    }
+
+    void Clear()
+    {
+        history_.clear();
+    }
+
+    int GetIngestTimes(const std::string& bundleName)
+    {
+        std::string id = std::to_string(GetPid());
+        if (!bundleName.empty()) {
+            id = bundleName;
+        }
+        auto iter = history_.find(id);
+        if (iter == history_.end()) {
+            return 0;
+        } else {
+            return iter->second.size();
         }
     }
 

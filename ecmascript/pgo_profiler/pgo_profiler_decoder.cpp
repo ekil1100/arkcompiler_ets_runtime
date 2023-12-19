@@ -277,6 +277,7 @@ void PGOProfilerDecoder::Merge(const PGOProfilerDecoder &decoder)
         memcpy_s(header_, sizeof(base::FileHeaderBase), decoder.header_, sizeof(base::FileHeaderBase));
     }
     pandaFileInfos_.Merge(decoder.GetPandaFileInfos());
+    loadingHistory_->Merge(*decoder.GetLoadingHistory());
     recordSimpleInfos_->Merge(decoder.GetRecordSimpleInfos());
 }
 } // namespace panda::ecmascript::pgo

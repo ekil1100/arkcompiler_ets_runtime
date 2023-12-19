@@ -35,6 +35,7 @@ namespace panda::ecmascript::pgo {
 void PGOProfilerEncoder::Destroy()
 {
     pandaFileInfos_->Clear();
+    loadingHistory_->Clear();
     abcFilePool_->Clear();
     if (!isProfilingInitialized_) {
         return;
@@ -123,6 +124,11 @@ void PGOProfilerEncoder::Merge(const PGORecordDetailInfos &recordInfos)
 void PGOProfilerEncoder::Merge(const PGOPandaFileInfos &pandaFileInfos)
 {
     return pandaFileInfos_->Merge(pandaFileInfos);
+}
+
+void PGOProfilerEncoder::Merge(const PGOLoadingHistory& loadingHistory)
+{
+    return loadingHistory_->Merge(loadingHistory);
 }
 
 void PGOProfilerEncoder::Merge(const PGOProfilerEncoder &encoder)
@@ -247,7 +253,7 @@ bool PGOProfilerEncoder::InternalSave(const SaveTask *task)
     if (!isProfilingInitialized_) {
         return false;
     }
-    auto id = loadingHistory_->GetId(bundleName_, moduleName_);
+    auto id = loadingHistory_->GetId(bundleName_);
     auto newTimestamp = loadingHistory_->GetTimestamp();
     loadingHistory_->AddHistory(id, newTimestamp);
     if ((mode_ == MERGE) && FileExist(realOutPath_.c_str())) {
