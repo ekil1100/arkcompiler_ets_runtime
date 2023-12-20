@@ -83,6 +83,10 @@ void PGOLoadingHistory::Merge(const PGOLoadingHistory& other)
         return;
     }
 
+    if (other.history_.empty()) {
+        return;
+    }
+
     LOG_ECMA(DEBUG) << TAG << "merging history";
     for (const auto& pair: other.history_) {
         std::string id = pair.first;

@@ -41,6 +41,7 @@ bool PGOProfilerDecoder::Load(const std::shared_ptr<PGOAbcFilePool> &externalAbc
         return false;
     }
     pandaFileInfos_.ParseFromBinary(addr, header_->GetPandaInfoSection());
+    loadingHistory_->ParseFromBinary(addr, header_->GetHistorySection());
 
     if (!recordSimpleInfos_) {
         recordSimpleInfos_ = std::make_unique<PGORecordSimpleInfos>(hotnessThreshold_);
@@ -98,9 +99,6 @@ bool PGOProfilerDecoder::LoadFull(const std::shared_ptr<PGOAbcFilePool> &externa
         return false;
     }
     pandaFileInfos_.ParseFromBinary(addr, header_->GetPandaInfoSection());
-    if (!loadingHistory_) {
-        loadingHistory_ = std::make_shared<PGOLoadingHistory>();
-    }
     loadingHistory_->ParseFromBinary(addr, header_->GetHistorySection());
 
     if (!recordDetailInfos_) {
@@ -202,6 +200,9 @@ void PGOProfilerDecoder::Clear()
         }
         if (recordSimpleInfos_) {
             recordSimpleInfos_->Clear();
+        }
+        if (loadingHistory_) {
+            loadingHistory_->Clear();
         }
         isLoaded_ = false;
     }

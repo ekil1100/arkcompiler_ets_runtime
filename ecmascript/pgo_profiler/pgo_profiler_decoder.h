@@ -29,9 +29,11 @@
 namespace panda::ecmascript::pgo {
 class PGOProfilerDecoder {
 public:
-    PGOProfilerDecoder() = default;
-    PGOProfilerDecoder(const std::string &inPath, uint32_t hotnessThreshold)
-        : inPath_(inPath), hotnessThreshold_(hotnessThreshold) {}
+    PGOProfilerDecoder(): loadingHistory_(std::make_shared<PGOLoadingHistory>()) {}
+    PGOProfilerDecoder(const std::string& inPath, uint32_t hotnessThreshold)
+        : inPath_(inPath), hotnessThreshold_(hotnessThreshold), loadingHistory_(std::make_shared<PGOLoadingHistory>())
+    {
+    }
 
     virtual ~PGOProfilerDecoder()
     {

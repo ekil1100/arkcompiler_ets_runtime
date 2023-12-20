@@ -253,9 +253,7 @@ bool PGOProfilerEncoder::InternalSave(const SaveTask *task)
     if (!isProfilingInitialized_) {
         return false;
     }
-    auto id = loadingHistory_->GetId(bundleName_);
-    auto newTimestamp = loadingHistory_->GetTimestamp();
-    loadingHistory_->AddHistory(id, newTimestamp);
+    AddPGOLoadingHistory();
     if ((mode_ == MERGE) && FileExist(realOutPath_.c_str())) {
         PGOProfilerEncoder encoder(realOutPath_, hotnessThreshold_, mode_);
         encoder.InitializeData();

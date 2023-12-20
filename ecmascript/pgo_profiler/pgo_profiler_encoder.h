@@ -92,6 +92,18 @@ public:
 
     bool ResetOutPathByModuleName(const std::string &moduleName);
 
+    std::shared_ptr<PGOLoadingHistory> GetLoadingHistory() const
+    {
+        return loadingHistory_;
+    }
+
+    void AddPGOLoadingHistory()
+    {
+        auto id = loadingHistory_->GetId(bundleName_);
+        auto newTimestamp = loadingHistory_->GetTimestamp();
+        loadingHistory_->AddHistory(id, newTimestamp);
+    }
+
 protected:
     PGOProfilerHeader *header_ {nullptr};
 
