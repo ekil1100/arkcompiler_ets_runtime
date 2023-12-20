@@ -99,7 +99,7 @@ public:
         history_.clear();
     }
 
-    int GetIngestTimes(const std::string& bundleName)
+    int GetCollectionTimes(const std::string& bundleName)
     {
         std::string id = std::to_string(GetPid());
         if (!bundleName.empty()) {

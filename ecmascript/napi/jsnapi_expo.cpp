@@ -3669,7 +3669,7 @@ void JSNApi::InitializePGOProfiler(const ecmascript::JSRuntimeOptions &options)
     ecmascript::pgo::PGOProfilerManager::GetInstance()->Initialize(options.GetPGOProfilerPath(),
                                                                    options.GetPGOHotnessThreshold(),
                                                                    options.IsEnablePGOLoadingHistory(),
-                                                                   options.GetPGORuntimeIngestTimes());
+                                                                   options.GetPGOMaxCollectionTimes());
 }
 
 void JSNApi::DestroyPGOProfiler()

@@ -128,14 +128,15 @@ const std::string PUBLIC_API HELP_OPTION_MSG =
     "--stub-file:                          Path of file includes common stubs module compiled by stub compiler. "
     "Default: 'stub.an'\n"
     "--enable-pgo-profiler:                Enable pgo profiler to sample jsfunction call and output to file. "
-                                           "Default: 'false'\n"
+    "Default: 'false'\n"
     "--enable-elements-kind:               Enable elementsKind sampling and usage. Default: 'false'\n"
     "--compiler-pgo-hotness-threshold:     Set hotness threshold for pgo in aot compiler. Default: '2'\n"
     "--compiler-pgo-profiler-path:         The pgo file output dir or the pgo file dir of AOT compiler. Default: ''\n"
     "--compiler-pgo-save-min-interval:     Set the minimum time interval for automatically saving profile, "
     "Unit seconds. Default: '30s'\n"
-    "--enable-pgo-loading-history:         Enable PGO loading history. Default: true\n"
-    "--pgo-runtime-ingest-times:           Set the number of times the runtime ingests. Default: -1\n"
+    "--enable-pgo-loading-history:         Enable recording PGO loading history. Default: true\n"
+    "--pgo-max-colletion-times:            Set the maximum number of times collect runtime ap (less 0 means infinity). "
+    "                                      Default: -1\n"
     "--compiler-target-triple:             CPU triple for aot compiler or stub compiler. \n"
     "                                      values: ['x86_64-unknown-linux-gnu', 'arm-unknown-linux-gnu', \n"
     "                                      'aarch64-unknown-linux-gnu'], Default: 'x86_64-unknown-linux-gnu'\n"
@@ -245,7 +246,7 @@ bool JSRuntimeOptions::ParseCommand(const int argc, const char **argv)
         {"compiler-pgo-hotness-threshold", required_argument, nullptr, OPTION_COMPILER_PGO_HOTNESS_THRESHOLD},
         {"compiler-pgo-save-min-interval", required_argument, nullptr, OPTION_COMPILER_PGO_SAVE_MIN_INTERVAL},
         {"enable-pgo-loading-history", required_argument, nullptr, OPTION_ENABLE_PGO_LOADING_HISTORY},
-        {"pgo-runtime-ingest-times", required_argument, nullptr, OPTION_PGO_RUNTIME_INGEST_TIMES},
+        {"pgo-max-collection-times", required_argument, nullptr, OPTION_PGO_MAX_COLLECTION_TIMES},
         {"compiler-verify-vtable", required_argument, nullptr, OPTION_COMPILER_VERIFY_VTABLE},
         {"compiler-select-methods", required_argument, nullptr, OPTION_COMPILER_SELECT_METHODS},
         {"compiler-skip-methods", required_argument, nullptr, OPTION_COMPILER_SKIP_METHODS},
@@ -657,10 +658,10 @@ bool JSRuntimeOptions::ParseCommand(const int argc, const char **argv)
                     return false;
                 }
                 break;
-            case OPTION_PGO_RUNTIME_INGEST_TIMES:
-                ret = ParseIntParam("pgo-runtime-ingest-times", &argInt);
+            case OPTION_PGO_MAX_COLLECTION_TIMES:
+                ret = ParseIntParam("pgo-max-collection-times", &argInt);
                 if (ret) {
-                    SetPGORuntimeIngestTimes(argInt);
+                    SetPGOMaxCollectionTimes(argInt);
                 } else {
                     return false;
                 }

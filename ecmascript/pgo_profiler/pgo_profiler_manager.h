@@ -47,13 +47,13 @@ public:
     void Initialize(const std::string& outDir,
                     uint32_t hotnessThreshold,
                     const bool isEnablePGOLoadingHistory,
-                    const int pgoRuntimeIngestTimes)
+                    const int pgoMaxCollectionTimes)
     {
         // For FA jsvm, merge with existed output file
         encoder_ = std::make_unique<PGOProfilerEncoder>(outDir, hotnessThreshold, ApGenMode::MERGE);
         decoder_ = std::make_unique<PGOProfilerDecoder>(outDir, hotnessThreshold);
         isEnablePGOLoadingHistory_ = isEnablePGOLoadingHistory;
-        pgoRuntimeIngestTimes_ = pgoRuntimeIngestTimes;
+        pgoMaxCollectionTimes_ = pgoMaxCollectionTimes;
     }
 
     void SetBundleName(const std::string &bundleName)
@@ -252,15 +252,18 @@ public:
         return isEnablePGOLoadingHistory_;
     }
 
-    int GetPGORuntimeIngestTimes()
+    int GetPGOMaxCollectionTimes()
     {
-        return pgoRuntimeIngestTimes_;
+        return pgoMaxCollectionTimes_;
     }
 
 private:
     bool InitializeData()
     {
         if (!encoder_) {
+            return false;
+        }
+        if (pgoMaxCollectionTimes_ == 0) {
             return false;
         }
         if (decoder_->APFileExist() && isEnablePGOLoadingHistory_) {
@@ -270,13 +273,13 @@ private:
             if (!decoder_->LoadFull()) {
                 return false;
             }
-            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "pgo runtime ingest time: " << pgoRuntimeIngestTimes_;
-            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "pgo runtime ingested: "
-                           << decoder_->GetLoadingHistory()->GetIngestTimes(encoder_->GetBundleName());
-            if (pgoRuntimeIngestTimes_ > 0 &&
-                decoder_->GetLoadingHistory()->GetIngestTimes(encoder_->GetBundleName()) >= pgoRuntimeIngestTimes_) {
+            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "PGO max collection times set to: " << pgoMaxCollectionTimes_;
+            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "PGO already collected times: "
+                           << decoder_->GetLoadingHistory()->GetCollectionTimes(encoder_->GetBundleName());
+            if (pgoMaxCollectionTimes_ >= 0 && decoder_->GetLoadingHistory()->GetCollectionTimes(
+                                                   encoder_->GetBundleName()) >= pgoMaxCollectionTimes_) {
                 LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "disable PGO for " << encoder_->GetBundleName() << " by "
-                               << "ingesting more than " << pgoRuntimeIngestTimes_ << " times. ";
+                               << "max collection times set to " << pgoMaxCollectionTimes_;
                 return false;
             }
         }
@@ -293,7 +296,7 @@ private:
     os::memory::Mutex mutex_;
     std::set<std::shared_ptr<PGOProfiler>> profilers_;
     bool isEnablePGOLoadingHistory_ {true};
-    int pgoRuntimeIngestTimes_ {-1};
+    int pgoMaxCollectionTimes_ {-1};
 };
 } // namespace panda::ecmascript::pgo
 #endif  // ECMASCRIPT_PGO_PROFILER_MANAGER_H

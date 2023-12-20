@@ -128,7 +128,7 @@ enum CommandValues {
     OPTION_COMPILER_PGO_SAVE_MIN_INTERVAL,
     OPTION_ENABLE_PGO_PROFILER,
     OPTION_ENABLE_PGO_LOADING_HISTORY,
-    OPTION_PGO_RUNTIME_INGEST_TIMES,
+    OPTION_PGO_MAX_COLLECTION_TIMES,
     OPTION_OPTIONS,
     OPTION_PRINT_EXECUTE_TIME,
     OPTION_COMPILER_VERIFY_VTABLE,
@@ -989,14 +989,14 @@ public:
         return enablePGOLoadingHistory_;
     }
 
-    void SetPGORuntimeIngestTimes(int value)
+    void SetPGOMaxCollectionTimes(int value)
     {
-        pgoRuntimeIngestTimes_ = value;
+        pgoMaxCollectionTimes_ = value;
     }
 
-    int GetPGORuntimeIngestTimes() const
+    int GetPGOMaxCollectionTimes() const
     {
-        return pgoRuntimeIngestTimes_;
+        return pgoMaxCollectionTimes_;
     }
 
     void SetEnableTypeLowering(bool value)
@@ -1524,7 +1524,7 @@ private:
     std::string pgoProfilerPath_ {""};
     uint32_t pgoSaveMinInterval_ {30};
     bool enablePGOLoadingHistory_ {true};
-    int pgoRuntimeIngestTimes_ {-1};
+    int pgoMaxCollectionTimes_ {-1};
     bool traceDeopt_ {false};
     uint8_t deoptThreshold_ {10};
     bool stressDeopt_ {false};
