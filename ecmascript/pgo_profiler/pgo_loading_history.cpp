@@ -14,11 +14,16 @@
  */
 
 #include "ecmascript/pgo_profiler/pgo_loading_history.h"
+#include "ecmascript/pgo_profiler/pgo_profiler_manager.h"
 #include <cstdint>
 
 namespace panda::ecmascript::pgo {
 void PGOLoadingHistory::ParseFromBinary(void* buffer, SectionInfo* const info)
 {
+    if (!PGOProfilerManager::GetInstance()->IsEnablePGOLoadingHistory()) {
+        return;
+    }
+
     void* ptr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(buffer) + info->offset_);
 
     LOG_ECMA(DEBUG) << TAG << "parse from binary";
@@ -45,6 +50,10 @@ void PGOLoadingHistory::ParseFromBinary(void* buffer, SectionInfo* const info)
 
 void PGOLoadingHistory::ProcessToBinary(std::fstream& fileStream, SectionInfo* const info) const
 {
+    if (!PGOProfilerManager::GetInstance()->IsEnablePGOLoadingHistory()) {
+        return;
+    }
+
     fileStream.seekp(info->offset_, std::ios::cur);
     info->offset_ = static_cast<uint32_t>(fileStream.tellp());
 
@@ -70,6 +79,10 @@ void PGOLoadingHistory::ProcessToBinary(std::fstream& fileStream, SectionInfo* c
 
 void PGOLoadingHistory::Merge(const PGOLoadingHistory& other)
 {
+    if (!PGOProfilerManager::GetInstance()->IsEnablePGOLoadingHistory()) {
+        return;
+    }
+
     LOG_ECMA(DEBUG) << TAG << "merging history";
     for (const auto& pair: other.history_) {
         std::string id = pair.first;
@@ -81,6 +94,10 @@ void PGOLoadingHistory::Merge(const PGOLoadingHistory& other)
 
 void PGOLoadingHistory::ProcessToText(std::ofstream& stream) const
 {
+    if (!PGOProfilerManager::GetInstance()->IsEnablePGOLoadingHistory()) {
+        return;
+    }
+
     stream << DumpUtils::NEW_LINE << "PGOLoadingHistory:" << DumpUtils::NEW_LINE;
     for (const auto& pair: history_) {
         std::string id = pair.first;

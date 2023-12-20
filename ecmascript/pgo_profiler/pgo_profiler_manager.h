@@ -247,20 +247,31 @@ public:
                              ApGenMode mode);
     static bool MergeApFiles(uint32_t checksum, PGOProfilerDecoder &merger);
 
+    bool IsEnablePGOLoadingHistory()
+    {
+        return isEnablePGOLoadingHistory_;
+    }
+
+    int GetPGORuntimeIngestTimes()
+    {
+        return pgoRuntimeIngestTimes_;
+    }
+
 private:
     bool InitializeData()
     {
         if (!encoder_) {
             return false;
         }
-        if (decoder_->APFileExist()) {
+        if (decoder_->APFileExist() && isEnablePGOLoadingHistory_) {
             if (!decoder_) {
                 return false;
             }
             if (!decoder_->LoadFull()) {
                 return false;
             }
-            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "pgo ingested times: "
+            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "pgo runtime ingest time: " << pgoRuntimeIngestTimes_;
+            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "pgo runtime ingested: "
                            << decoder_->GetLoadingHistory()->GetIngestTimes(encoder_->GetBundleName());
             if (pgoRuntimeIngestTimes_ > 0 &&
                 decoder_->GetLoadingHistory()->GetIngestTimes(encoder_->GetBundleName()) >= pgoRuntimeIngestTimes_) {
