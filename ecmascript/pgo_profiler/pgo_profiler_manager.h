@@ -263,24 +263,34 @@ private:
         if (!encoder_) {
             return false;
         }
-        if (pgoMaxCollectionTimes_ == 0) {
-            return false;
-        }
-        if (decoder_->APFileExist() && isEnablePGOLoadingHistory_) {
-            if (!decoder_) {
-                return false;
-            }
-            if (!decoder_->LoadFull()) {
-                return false;
-            }
+        if (isEnablePGOLoadingHistory_) {
             LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "PGO max collection times set to: " << pgoMaxCollectionTimes_;
-            LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "PGO already collected times: "
-                           << decoder_->GetLoadingHistory()->GetCollectionTimes(encoder_->GetBundleName());
-            if (pgoMaxCollectionTimes_ >= 0 && decoder_->GetLoadingHistory()->GetCollectionTimes(
-                                                   encoder_->GetBundleName()) >= pgoMaxCollectionTimes_) {
-                LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "disable PGO for " << encoder_->GetBundleName() << " by "
+
+            if (pgoMaxCollectionTimes_ == 0) {
+                LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "disable PGO for "
+                               << PGOLoadingHistory::GetId(encoder_->GetBundleName()) << " by "
                                << "max collection times set to " << pgoMaxCollectionTimes_;
                 return false;
+            }
+
+            if (decoder_->APFileExist()) {
+                if (!decoder_) {
+                    return false;
+                }
+
+                if (!decoder_->LoadFull()) {
+                    return false;
+                }
+
+                int collectionTimes = decoder_->GetLoadingHistory()->GetCollectionTimes(encoder_->GetBundleName());
+                LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "PGO already collected: " << collectionTimes;
+
+                if (pgoMaxCollectionTimes_ >= 0 && collectionTimes >= pgoMaxCollectionTimes_) {
+                    LOG_ECMA(INFO) << PGOLoadingHistory::TAG << "disable PGO for "
+                                   << PGOLoadingHistory::GetId(encoder_->GetBundleName()) << " by "
+                                   << "max collection times set to " << pgoMaxCollectionTimes_;
+                    return false;
+                }
             }
         }
         if (!enableSignalSaving_) {

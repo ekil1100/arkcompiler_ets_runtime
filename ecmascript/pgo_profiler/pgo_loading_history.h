@@ -50,7 +50,7 @@ public:
         return {};
     }
 
-    int GetPid() const
+    static int GetPid()
     {
 #if defined(_WIN32) || defined(_WIN64)
         return static_cast<int>(GetCurrentProcessId());
@@ -59,7 +59,7 @@ public:
 #endif
     }
 
-    std::string GetId(std::string& bundleName) const
+    static std::string GetId(const std::string& bundleName)
     {
         if (bundleName.empty()) {
             return std::to_string(GetPid());
@@ -68,7 +68,7 @@ public:
         }
     }
 
-    Timestamp GetTimestamp()
+    static Timestamp GetTimestamp()
     {
         return std::chrono::system_clock::now();
     }
