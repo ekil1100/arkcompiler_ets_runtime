@@ -113,6 +113,11 @@ public:
         }
     }
 
+    HistoryMap GetHistories()
+    {
+        return history_;
+    }
+
 private:
     HistoryMap history_;
 
