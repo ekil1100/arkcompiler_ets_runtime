@@ -29,8 +29,8 @@ void PGOLoadingHistory::ParseFromBinary(void* buffer, SectionInfo* const info)
     LOG_ECMA(DEBUG) << TAG << "parse from binary";
     for (uint32_t i = 0; i < info->number_; i++) {
         size_t idSize = base::ReadBuffer<size_t>(&ptr, sizeof(size_t));
-        std::unique_ptr<char[]> idBuffer(new char[idSize + 1]);
-        memcpy(idBuffer.get(), ptr, idSize);
+        std::unique_ptr<char[]> idBuffer = std::make_unique<char[]>(idSize + 1);
+        std::copy(static_cast<char*>(ptr), static_cast<char*>(ptr) + idSize, idBuffer.get());
         idBuffer[idSize] = '\0';
         std::string id(idBuffer.get());
         ptr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(ptr) + idSize);

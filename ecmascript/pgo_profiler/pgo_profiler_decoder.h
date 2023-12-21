@@ -187,7 +187,8 @@ public:
 
     bool APFileExist() const
     {
-        return FileExist(inPath_.c_str()) && inPath_.substr(inPath_.length() - 3) == ".ap";
+        auto isAPFile = inPath_.substr(inPath_.length() - 3) == ".ap";
+        return FileExist(inPath_.c_str()) && isAPFile;
     }
 
 private:
