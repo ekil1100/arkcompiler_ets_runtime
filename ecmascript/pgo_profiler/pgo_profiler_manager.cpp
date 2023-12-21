@@ -56,6 +56,7 @@ bool PGOProfilerManager::MergeApFiles(const std::string &inFiles, const std::str
         }
         merger.Merge(decoder.GetRecordDetailInfos());
         merger.Merge(decoder.GetPandaFileInfos());
+        merger.Merge(*decoder.GetLoadingHistory());
         isFirstFile = false;
     }
     if (isFirstFile) {

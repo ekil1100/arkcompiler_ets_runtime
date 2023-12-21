@@ -19,6 +19,7 @@
 #include <memory>
 #include <utility>
 
+#include "ecmascript/pgo_profiler/pgo_loading_history.h"
 #include "ecmascript/pgo_profiler/pgo_profiler_info.h"
 #include "macros.h"
 
@@ -33,6 +34,7 @@ public:
     {
         pandaFileInfos_ = std::make_unique<PGOPandaFileInfos>();
         abcFilePool_ = std::make_shared<PGOAbcFilePool>();
+        loadingHistory_ = std::make_shared<PGOLoadingHistory>();
     }
 
     ~PGOProfilerEncoder()
@@ -69,6 +71,7 @@ public:
     bool GetPandaFileDesc(ApEntityId abcId, CString &desc);
     void Merge(const PGORecordDetailInfos &recordInfos);
     void Merge(const PGOPandaFileInfos &pandaFileInfos);
+    void Merge(const PGOLoadingHistory& loadingHistory);
     void Merge(const PGOProfilerEncoder &encoder);
     bool VerifyPandaFileMatched(const PGOPandaFileInfos &pandaFileInfos, const std::string &base,
                                 const std::string &incoming) const;
@@ -89,6 +92,18 @@ public:
 
     bool ResetOutPathByModuleName(const std::string &moduleName);
 
+    std::shared_ptr<PGOLoadingHistory> GetLoadingHistory() const
+    {
+        return loadingHistory_;
+    }
+
+    void AddPGOLoadingHistory()
+    {
+        auto id = loadingHistory_->GetId(bundleName_);
+        auto newTimestamp = loadingHistory_->GetTimestamp();
+        loadingHistory_->AddHistory(id, newTimestamp);
+    }
+
 protected:
     PGOProfilerHeader *header_ {nullptr};
 
@@ -108,6 +123,7 @@ private:
     std::unique_ptr<PGOPandaFileInfos> pandaFileInfos_;
     std::shared_ptr<PGOAbcFilePool> abcFilePool_;
     std::shared_ptr<PGORecordDetailInfos> globalRecordInfos_;
+    std::shared_ptr<PGOLoadingHistory> loadingHistory_;
     Mutex mutex_;
     RWLock rwLock_;
     std::string moduleName_;

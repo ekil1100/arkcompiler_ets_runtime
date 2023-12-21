@@ -19,17 +19,21 @@
 #include "ecmascript/jspandafile/method_literal.h"
 #include "ecmascript/log.h"
 #include "ecmascript/log_wrapper.h"
+#include "ecmascript/pgo_profiler/pgo_loading_history.h"
 #include "ecmascript/pgo_profiler/pgo_profiler_info.h"
 #include "ecmascript/pgo_profiler/pgo_utils.h"
 #include "ecmascript/pgo_profiler/types/pgo_profiler_type.h"
+#include "ecmascript/platform/file.h"
 #include "ecmascript/platform/map.h"
 
 namespace panda::ecmascript::pgo {
 class PGOProfilerDecoder {
 public:
-    PGOProfilerDecoder() = default;
-    PGOProfilerDecoder(const std::string &inPath, uint32_t hotnessThreshold)
-        : inPath_(inPath), hotnessThreshold_(hotnessThreshold) {}
+    PGOProfilerDecoder(): loadingHistory_(std::make_shared<PGOLoadingHistory>()) {}
+    PGOProfilerDecoder(const std::string& inPath, uint32_t hotnessThreshold)
+        : inPath_(inPath), hotnessThreshold_(hotnessThreshold), loadingHistory_(std::make_shared<PGOLoadingHistory>())
+    {
+    }
 
     virtual ~PGOProfilerDecoder()
     {
@@ -159,6 +163,11 @@ public:
         return pandaFileInfos_;
     }
 
+    std::shared_ptr<PGOLoadingHistory> GetLoadingHistory() const
+    {
+        return loadingHistory_;
+    }
+
     bool GetAbcNameById(ApEntityId abcId, CString &abcName) const
     {
         ASSERT(header_ != nullptr);
@@ -174,6 +183,15 @@ public:
         }
         abcName = entry->GetData();
         return true;
+    }
+
+    bool APFileExist() const
+    {
+        if (!FileExist(inPath_.c_str())) {
+            return false;
+        }
+        auto isAPFile = inPath_.substr(inPath_.length() - 3) == ".ap";
+        return isAPFile;
     }
 
 private:
@@ -196,6 +214,7 @@ private:
     bool externalAbcFilePool_ {false};
     std::shared_ptr<PGORecordDetailInfos> recordDetailInfos_;
     std::unique_ptr<PGORecordSimpleInfos> recordSimpleInfos_;
+    std::shared_ptr<PGOLoadingHistory> loadingHistory_;
     MemMap fileMapAddr_;
 };
 } // namespace panda::ecmascript::pgo

@@ -47,7 +47,7 @@ const std::string PUBLIC_API HELP_OPTION_MSG =
     "--asm-opcode-disable-range:           Opcode range when asm interpreter is enabled.\n"
     "--compiler-assert-types:              Enable type assertion for type inference tests. Default: 'false'\n"
     "--builtins-dts:                       Builtins.d.abc file path for AOT.\n"
-    "--builtins-lazy:                     Load some builtins function later.This option is only valid in workervm.\n"
+    "--builtins-lazy:                      Load some builtins function later.This option is only valid in workervm.\n"
     "--compiler-log:                       Log Option For aot compiler and stub compiler,\n"
     "                                      'none': no log,\n"
     "                                      'allllircirasm' or 'all012': print all log for all methods,\n"
@@ -56,12 +56,12 @@ const std::string PUBLIC_API HELP_OPTION_MSG =
     "                                      'allasm' or 'all2': print asm log for all methods,\n"
     "                                      'alltype' or 'all3': print type infer log for all methods,\n"
     "                                      'cerllircirasm' or 'cer0112': print all log for certain method defined "
-                                           "in 'mlist-for-log',\n"
+    "                                      in 'mlist-for-log',\n"
     "                                      'cercir' or 'cer0': print IR for methods in 'mlist-for-log',\n"
     "                                      'cerasm' or 'cer2': print log for methods in 'mlist-for-log',\n"
     "                                      Default: 'none'\n"
     "--compiler-log-methods:               Specific method list for compiler log, only used when compiler-log. "
-                                           "Default: 'none'\n"
+    "                                      Default: 'none'\n"
     "--compiler-type-threshold:            enable to skip methods whose type is no more than threshold. Default: -1\n"
     "--compiler-log-snapshot:              Enable to print snapshot information. Default: 'false'\n"
     "--compiler-opt-global-typeinfer:      Enable global typeinfer for aot compiler: Default: 'false'\n"
@@ -126,14 +126,17 @@ const std::string PUBLIC_API HELP_OPTION_MSG =
     "--snapshot-file:                      Snapshot file. Default: '/system/etc/snapshot'\n"
     "--startup-time:                       Print the start time of command execution. Default: 'false'\n"
     "--stub-file:                          Path of file includes common stubs module compiled by stub compiler. "
-                                           "Default: 'stub.an'\n"
+    "                                      Default: 'stub.an'\n"
     "--enable-pgo-profiler:                Enable pgo profiler to sample jsfunction call and output to file. "
-                                           "Default: 'false'\n"
+    "                                      Default: 'false'\n"
     "--enable-elements-kind:               Enable elementsKind sampling and usage. Default: 'false'\n"
     "--compiler-pgo-hotness-threshold:     Set hotness threshold for pgo in aot compiler. Default: '2'\n"
     "--compiler-pgo-profiler-path:         The pgo file output dir or the pgo file dir of AOT compiler. Default: ''\n"
     "--compiler-pgo-save-min-interval:     Set the minimum time interval for automatically saving profile, "
-                                           "Unit seconds. Default: '30s'\n"
+    "                                      Unit seconds. Default: '30s'\n"
+    "--enable-pgo-loading-history:         Enable recording PGO loading history. Default: true\n"
+    "--pgo-max-colletion-times:            Set the maximum number of times collect runtime ap (less 0 means infinity). "
+    "                                      Default: -1\n"
     "--compiler-target-triple:             CPU triple for aot compiler or stub compiler. \n"
     "                                      values: ['x86_64-unknown-linux-gnu', 'arm-unknown-linux-gnu', \n"
     "                                      'aarch64-unknown-linux-gnu'], Default: 'x86_64-unknown-linux-gnu'\n"
@@ -266,6 +269,8 @@ bool JSRuntimeOptions::ParseCommand(const int argc, const char **argv)
         {"compiler-enable-jit", required_argument, nullptr, OPTION_COMPILER_ENABLE_JIT},
         {"compiler-jit-hotness-threshold", required_argument, nullptr, OPTION_COMPILER_JIT_HOTNESS_THRESHOLD},
         {"compiler-force-jit-compile-main", required_argument, nullptr, OPTION_COMPILER_FORCE_JIT_COMPILE_MAIN},
+        {"enable-pgo-loading-history", required_argument, nullptr, OPTION_ENABLE_PGO_LOADING_HISTORY},
+        {"pgo-max-collection-times", required_argument, nullptr, OPTION_PGO_MAX_COLLECTION_TIMES},
         {nullptr, 0, nullptr, 0},
     };
 
@@ -641,6 +646,22 @@ bool JSRuntimeOptions::ParseCommand(const int argc, const char **argv)
                 ret = ParseUint32Param("compiler-pgo-save-min-interval)", &argUint32);
                 if (ret) {
                     SetPGOSaveMinInterval(argUint32);
+                } else {
+                    return false;
+                }
+                break;
+            case OPTION_ENABLE_PGO_LOADING_HISTORY:
+                ret = ParseBoolParam(&argBool);
+                if (ret) {
+                    SetEnablePGOLoadingHistory(argBool);
+                } else {
+                    return false;
+                }
+                break;
+            case OPTION_PGO_MAX_COLLECTION_TIMES:
+                ret = ParseIntParam("pgo-max-collection-times", &argInt);
+                if (ret) {
+                    SetPGOMaxCollectionTimes(argInt);
                 } else {
                     return false;
                 }

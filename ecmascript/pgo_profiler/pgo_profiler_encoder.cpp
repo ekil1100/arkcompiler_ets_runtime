@@ -19,9 +19,10 @@
 #include <memory>
 #include <string>
 
+#include "ecmascript/log.h"
 #include "ecmascript/log_wrapper.h"
-#include "ecmascript/ohos/white_list_helper.h"
 #include "ecmascript/mem/c_string.h"
+#include "ecmascript/ohos/white_list_helper.h"
 #include "ecmascript/pgo_profiler/ap_file/pgo_file_info.h"
 #include "ecmascript/pgo_profiler/pgo_profiler_decoder.h"
 #include "ecmascript/pgo_profiler/pgo_profiler_encoder.h"
@@ -34,6 +35,7 @@ namespace panda::ecmascript::pgo {
 void PGOProfilerEncoder::Destroy()
 {
     pandaFileInfos_->Clear();
+    loadingHistory_->Clear();
     abcFilePool_->Clear();
     if (!isProfilingInitialized_) {
         return;
@@ -124,6 +126,11 @@ void PGOProfilerEncoder::Merge(const PGOPandaFileInfos &pandaFileInfos)
     return pandaFileInfos_->Merge(pandaFileInfos);
 }
 
+void PGOProfilerEncoder::Merge(const PGOLoadingHistory& loadingHistory)
+{
+    return loadingHistory_->Merge(loadingHistory);
+}
+
 void PGOProfilerEncoder::Merge(const PGOProfilerEncoder &encoder)
 {
     Merge(*encoder.pandaFileInfos_);
@@ -163,6 +170,7 @@ void PGOProfilerEncoder::MergeWithExistProfile(PGOProfilerEncoder &runtimeEncode
     } else {
         Merge(decoder.GetPandaFileInfos());
         globalRecordInfos_ = decoder.GetRecordDetailInfosPtr();
+        loadingHistory_ = decoder.GetLoadingHistory();
     }
     if (task && task->IsTerminate()) {
         LOG_ECMA(DEBUG) << "ProcessProfile: task is already terminate";
@@ -174,6 +182,11 @@ void PGOProfilerEncoder::MergeWithExistProfile(PGOProfilerEncoder &runtimeEncode
         return;
     }
     Merge(*runtimeEncoder.globalRecordInfos_);
+    if (task && task->IsTerminate()) {
+        LOG_ECMA(DEBUG) << "ProcessProfile: task is already terminate";
+        return;
+    }
+    loadingHistory_->Merge(*runtimeEncoder.loadingHistory_);
 }
 
 bool PGOProfilerEncoder::SaveAndRename(const SaveTask *task)
@@ -187,6 +200,7 @@ bool PGOProfilerEncoder::SaveAndRename(const SaveTask *task)
         return false;
     }
     pandaFileInfos_->ProcessToBinary(fileStream, header_->GetPandaInfoSection());
+    loadingHistory_->ProcessToBinary(fileStream, header_->GetHistorySection());
     globalRecordInfos_->ProcessToBinary(task, fileStream, header_);
     {
         ReadLockHolder lock(rwLock_);
@@ -239,6 +253,7 @@ bool PGOProfilerEncoder::InternalSave(const SaveTask *task)
     if (!isProfilingInitialized_) {
         return false;
     }
+    AddPGOLoadingHistory();
     if ((mode_ == MERGE) && FileExist(realOutPath_.c_str())) {
         PGOProfilerEncoder encoder(realOutPath_, hotnessThreshold_, mode_);
         encoder.InitializeData();

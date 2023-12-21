@@ -171,6 +171,7 @@ JSHandle<EcmaString> ResolveFilenameFromNative(JSThread *thread, JSTaggedValue d
     THROW_NEW_ERROR_AND_RETURN_HANDLE(thread, ErrorType::REFERENCE_ERROR, EcmaString, msg.c_str());
 }
 
+// NOTE - pass dir like "ark-profiler16/" and if it exists, it also return true.
 bool FileExist(const char *filename)
 {
     return (_access(filename, 0) != -1);
