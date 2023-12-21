@@ -19,14 +19,9 @@
 #include "ecmascript/pgo_profiler/ap_file/pgo_file_info.h"
 #include <chrono>
 #include <fstream>
+#include <unistd.h>
 #include <unordered_map>
 #include <vector>
-
-#if defined(_WIN32) || defined(_WIN64)
-    #include <windows.h>
-#else
-    #include <unistd.h>
-#endif
 
 namespace panda::ecmascript::pgo {
 class PGOLoadingHistory {
@@ -52,11 +47,7 @@ public:
 
     static int GetPid()
     {
-#if defined(_WIN32) || defined(_WIN64)
-        return static_cast<int>(GetCurrentProcessId());
-#else
         return static_cast<int>(getpid());
-#endif
     }
 
     static std::string GetId(const std::string& bundleName)
