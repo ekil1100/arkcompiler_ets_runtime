@@ -245,8 +245,6 @@ bool JSRuntimeOptions::ParseCommand(const int argc, const char **argv)
         {"compiler-pgo-profiler-path", required_argument, nullptr, OPTION_COMPILER_PGO_PROFILER_PATH},
         {"compiler-pgo-hotness-threshold", required_argument, nullptr, OPTION_COMPILER_PGO_HOTNESS_THRESHOLD},
         {"compiler-pgo-save-min-interval", required_argument, nullptr, OPTION_COMPILER_PGO_SAVE_MIN_INTERVAL},
-        {"enable-pgo-loading-history", required_argument, nullptr, OPTION_ENABLE_PGO_LOADING_HISTORY},
-        {"pgo-max-collection-times", required_argument, nullptr, OPTION_PGO_MAX_COLLECTION_TIMES},
         {"compiler-verify-vtable", required_argument, nullptr, OPTION_COMPILER_VERIFY_VTABLE},
         {"compiler-select-methods", required_argument, nullptr, OPTION_COMPILER_SELECT_METHODS},
         {"compiler-skip-methods", required_argument, nullptr, OPTION_COMPILER_SKIP_METHODS},
@@ -271,6 +269,8 @@ bool JSRuntimeOptions::ParseCommand(const int argc, const char **argv)
         {"compiler-enable-jit", required_argument, nullptr, OPTION_COMPILER_ENABLE_JIT},
         {"compiler-jit-hotness-threshold", required_argument, nullptr, OPTION_COMPILER_JIT_HOTNESS_THRESHOLD},
         {"compiler-force-jit-compile-main", required_argument, nullptr, OPTION_COMPILER_FORCE_JIT_COMPILE_MAIN},
+        {"enable-pgo-loading-history", required_argument, nullptr, OPTION_ENABLE_PGO_LOADING_HISTORY},
+        {"pgo-max-collection-times", required_argument, nullptr, OPTION_PGO_MAX_COLLECTION_TIMES},
         {nullptr, 0, nullptr, 0},
     };
 
