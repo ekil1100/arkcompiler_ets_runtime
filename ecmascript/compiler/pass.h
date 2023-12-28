@@ -369,7 +369,8 @@ public:
                                  data->GetCompilerConfig(),
                                  data->GetTSManager(),
                                  &chunk,
-                                 passOptions->EnableLoweringBuiltin());
+                                 passOptions->EnableLoweringBuiltin(),
+                                 data->GetPassContext()->GetEcmaVM()->GetJSThread());
         visitor.AddPass(&lowering);
         visitor.VisitGraph();
         visitor.PrintLog("TypeHCRLowering");

@@ -29,6 +29,7 @@
 #include "ecmascript/message_string.h"
 #include "ecmascript/subtyping_operator.h"
 #include "ecmascript/vtable.h"
+#include "ecmascript/compiler/type_info_accessors.h"
 
 namespace panda::ecmascript::kungfu {
 GateRef TypeHCRLowering::VisitGate(GateRef gate)
@@ -149,9 +150,10 @@ GateRef TypeHCRLowering::VisitGate(GateRef gate)
             LowerArrayConstructor(gate, glue);
             break;
         case OpCode::LOAD_BUILTIN_OBJECT:
-            if (enableLoweringBuiltin_) {
-                LowerLoadBuiltinObject(gate);
-            }
+            LowerLoadBuiltinObject(gate);
+            break;
+        case OpCode::GLOBAL_RECORD_CHECK:
+            LowerGlobalRecordCheck(gate);
             break;
         case OpCode::OBJECT_CONSTRUCTOR_CHECK:
             LowerObjectConstructorCheck(gate, glue);
@@ -2175,6 +2177,9 @@ void TypeHCRLowering::ReplaceGateWithPendingException(GateRef glue, GateRef gate
 
 void TypeHCRLowering::LowerLoadBuiltinObject(GateRef gate)
 {
+    if (!enableLoweringBuiltin_) {
+        return;
+    }
     Environment env(gate, circuit_, &builder_);
     AddProfiling(gate);
     GateRef glue = acc_.GetGlueFromArgList();
@@ -2189,6 +2194,23 @@ void TypeHCRLowering::LowerLoadBuiltinObject(GateRef gate)
     // so we need deopt
     builder_.DeoptCheck(builtinIsNotHole, frameState, DeoptType::BUILTINISHOLE);
     acc_.ReplaceGate(gate, builder_.GetState(), builder_.GetDepend(), builtin);
+}
+
+void TypeHCRLowering::LowerGlobalRecordCheck(GateRef gate)
+{
+    if (!enableLoweringBuiltin_) {
+        return;
+    }
+    Environment env(gate, circuit_, &builder_);
+    GateRef glue = acc_.GetGlueFromArgList();
+    auto keyOffset = acc_.GetValueIn(gate, 0);
+    auto jsFunc = acc_.GetValueIn(gate, 1);
+    auto key = GetObjectFromConstPool(jsFunc, keyOffset);
+    auto record = builder_.GetGlobalRecord(glue, key, gate);
+    auto frameState = GetFrameState(gate);
+    auto isUndefined = builder_.TaggedIsUndefined(record);
+    builder_.DeoptCheck(isUndefined, frameState, DeoptType::GLOBALRECORDISNOTUNDEFINED);
+    acc_.ReplaceGate(gate, builder_.GetState(), builder_.GetDepend(), Circuit::NullGate());
 }
 
 void TypeHCRLowering::LowerOrdinaryHasInstance(GateRef gate, GateRef glue)

@@ -2403,39 +2403,6 @@ GateRef StubBuilder::GetValueFromDictionary(GateRef elements, GateRef entry)
     return GetValueFromTaggedArray(elements, valueIndex);
 }
 
-template<typename DictionaryT>
-GateRef StubBuilder::GetKeyFromDictionary(GateRef elements, GateRef entry)
-{
-    auto env = GetEnvironment();
-    Label subentry(env);
-    env->SubCfgEntry(&subentry);
-    Label exit(env);
-    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
-    Label ltZero(env);
-    Label notLtZero(env);
-    Label gtLength(env);
-    Label notGtLength(env);
-    GateRef dictionaryLength =
-        Load(VariableType::INT32(), elements, IntPtr(TaggedArray::LENGTH_OFFSET));
-    GateRef arrayIndex =
-        Int32Add(Int32(DictionaryT::TABLE_HEADER_SIZE),
-                 Int32Mul(entry, Int32(DictionaryT::ENTRY_SIZE)));
-    Branch(Int32LessThan(arrayIndex, Int32(0)), &ltZero, &notLtZero);
-    Bind(&ltZero);
-    Jump(&exit);
-    Bind(&notLtZero);
-    Branch(Int32GreaterThan(arrayIndex, dictionaryLength), &gtLength, &notGtLength);
-    Bind(&gtLength);
-    Jump(&exit);
-    Bind(&notGtLength);
-    result = GetValueFromTaggedArray(elements, arrayIndex);
-    Jump(&exit);
-    Bind(&exit);
-    auto ret = *result;
-    env->SubCfgExit();
-    return ret;
-}
-
 inline void StubBuilder::UpdateValueAndAttributes(GateRef glue, GateRef elements, GateRef index,
                                                   GateRef value, GateRef attr)
 {

@@ -16,22 +16,22 @@
 #ifndef ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
 #define ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
 
+#include <cstdint>
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/assembler/assembler.h"
 #include "ecmascript/compiler/builtins/builtins_call_signature.h"
-#include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/gate_accessor.h"
+#include "ecmascript/compiler/pgo_type/pgo_type_location.h"
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/global_env_constants.h"
-#include "ecmascript/compiler/pgo_type/pgo_type_location.h"
-#include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_runtime_options.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/tagged_array.h"
-#include <cstdint>
 
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
@@ -231,6 +231,7 @@ public:
     inline GateRef Hole();
 
     GateRef LoadBuiltinObject(size_t offset);
+    GateRef GlobalRecordCheck(GateRef keyOffset, GateRef jsFunc);
 
     // Get
     GateRef GetConstPool(GateRef jsFunc);
@@ -246,6 +247,13 @@ public:
     GateRef GetGlobalConstantValue(ConstantIndex index);
     GateRef GetGlobalEnvValue(VariableType type, GateRef env, size_t index);
     GateRef GetGlobalObject(GateRef glue);
+    GateRef GetGlobalRecord(GateRef glue, GateRef key, GateRef gate);
+    GateRef FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRef key, GateRef gate);
+    GateRef GetEntryIndexOfGlobalDictionary(GateRef entry);
+    GateRef GetBoxFromGlobalDictionary(GateRef object, GateRef entry);
+    GateRef GetNextPositionForHash(GateRef last, GateRef count, GateRef size);
+    template<typename DictionaryT>
+    GateRef GetKeyFromDictionary(GateRef elements, GateRef entry);
     GateRef GetMethodFromFunction(GateRef function);
     GateRef GetModuleFromFunction(GateRef function);
     GateRef GetHomeObjectFromFunction(GateRef function);
@@ -633,6 +641,7 @@ public:
     inline GateRef GetSecondFromTreeString(GateRef string);
     GateRef GetLengthFromString(GateRef value);
     GateRef GetHashcodeFromString(GateRef glue, GateRef value);
+    GateRef GetHashcodeFromString(GateRef glue, GateRef value, GateRef gate);
     GateRef TryGetHashcodeFromString(GateRef string);
     GateRef IsIntegerString(GateRef string);
     GateRef GetRawHashFromString(GateRef value);

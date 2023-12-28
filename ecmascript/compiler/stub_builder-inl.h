@@ -714,9 +714,7 @@ inline GateRef StubBuilder::TaggedIsTransitionHandler(GateRef x)
 
 inline GateRef StubBuilder::GetNextPositionForHash(GateRef last, GateRef count, GateRef size)
 {
-    auto nextOffset = Int32LSR(Int32Mul(count, Int32Add(count, Int32(1))),
-                               Int32(1));
-    return Int32And(Int32Add(last, nextOffset), Int32Sub(size, Int32(1)));
+    return env_->GetBuilder()->GetNextPositionForHash(last, count, size);
 }
 
 inline GateRef StubBuilder::DoubleIsNAN(GateRef x)
@@ -2606,16 +2604,12 @@ inline GateRef StubBuilder::GetModuleFromFunction(GateRef function)
 
 inline GateRef StubBuilder::GetEntryIndexOfGlobalDictionary(GateRef entry)
 {
-    return Int32Add(Int32(OrderTaggedHashTable<GlobalDictionary>::TABLE_HEADER_SIZE),
-        Int32Mul(entry, Int32(GlobalDictionary::ENTRY_SIZE)));
+    return env_->GetBuilder()->GetEntryIndexOfGlobalDictionary(entry);
 }
 
 inline GateRef StubBuilder::GetBoxFromGlobalDictionary(GateRef object, GateRef entry)
 {
-    GateRef index = GetEntryIndexOfGlobalDictionary(entry);
-    GateRef offset = PtrAdd(ZExtInt32ToPtr(index),
-        IntPtr(GlobalDictionary::ENTRY_VALUE_INDEX));
-    return GetValueFromTaggedArray(object, offset);
+    return env_->GetBuilder()->GetBoxFromGlobalDictionary(object, entry);
 }
 
 inline GateRef StubBuilder::GetValueFromGlobalDictionary(GateRef object, GateRef entry)
@@ -3037,6 +3031,12 @@ inline GateRef StubBuilder::GetKey(GateRef layoutInfo, GateRef index)
 {
     GateRef fixedIdx = GetKeyIndex(index);
     return GetValueFromTaggedArray(layoutInfo, fixedIdx);
+}
+
+template<typename DictionaryT>
+GateRef StubBuilder::GetKeyFromDictionary(GateRef elements, GateRef entry)
+{
+    return env_->GetBuilder()->GetKeyFromDictionary<DictionaryT>(elements, entry);
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

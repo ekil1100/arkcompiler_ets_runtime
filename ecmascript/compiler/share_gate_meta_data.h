@@ -75,6 +75,7 @@ enum class TypedCallTargetCheckOp : uint8_t;
     V(ProtoTypeChanged,               PROTOTYPECHANGED)             \
     V(BuiltinIsHole,                  BUILTINISHOLE)                \
     V(NewBuiltinCtorFail,             NEWBUILTINCTORFAIL)           \
+    V(GlobalRecordIsNotUndefined,     GLOBALRECORDISNOTUNDEFINED)
 
 enum class DeoptType : uint8_t {
     NOTCHECK = 0,

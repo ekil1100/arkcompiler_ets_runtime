@@ -15,10 +15,11 @@
 #ifndef ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_INL_H
 #define ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_INL_H
 
+#include "ecmascript/compiler/circuit_builder.h"
+#include "ecmascript/compiler/gate.h"
+#include "ecmascript/compiler/hcr_circuit_builder.h"
 #include "ecmascript/compiler/lcr_circuit_builder.h"
 #include "ecmascript/compiler/mcr_circuit_builder.h"
-#include "ecmascript/compiler/hcr_circuit_builder.h"
-#include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/method.h"
 
@@ -209,6 +210,36 @@ void CircuitBuilder::SetState(GateRef state)
 Label *CircuitBuilder::GetCurrentLabel() const
 {
     return GetCurrentEnvironment()->GetCurrentLabel();
+}
+
+template<typename DictionaryT>
+GateRef CircuitBuilder::GetKeyFromDictionary(GateRef elements, GateRef entry)
+{
+    Label subentry(env_);
+    env_->SubCfgEntry(&subentry);
+    Label exit(env_);
+    DEFVALUE(result, env_, VariableType::JS_ANY(), Undefined());
+    Label ltZero(env_);
+    Label notLtZero(env_);
+    Label gtLength(env_);
+    Label notGtLength(env_);
+    GateRef dictionaryLength = Load(VariableType::INT32(), elements, IntPtr(TaggedArray::LENGTH_OFFSET));
+    GateRef arrayIndex =
+        Int32Add(Int32(DictionaryT::TABLE_HEADER_SIZE), Int32Mul(entry, Int32(DictionaryT::ENTRY_SIZE)));
+    Branch(Int32LessThan(arrayIndex, Int32(0)), &ltZero, &notLtZero);
+    Bind(&ltZero);
+    Jump(&exit);
+    Bind(&notLtZero);
+    Branch(Int32GreaterThan(arrayIndex, dictionaryLength), &gtLength, &notGtLength);
+    Bind(&gtLength);
+    Jump(&exit);
+    Bind(&notGtLength);
+    result = GetValueFromTaggedArray(elements, arrayIndex);
+    Jump(&exit);
+    Bind(&exit);
+    auto ret = *result;
+    env_->SubCfgExit();
+    return ret;
 }
 } // namespace panda::ecmascript::kungfu
 

@@ -273,9 +273,7 @@ void TypeBytecodeLowering::Lower(GateRef gate)
             break;
         case EcmaOpcode::TRYLDGLOBALBYNAME_IMM8_ID16:
         case EcmaOpcode::TRYLDGLOBALBYNAME_IMM16_ID16:
-            if (enableLoweringBuiltin_) {
-                LowerTypedTryLdGlobalByName(gate);
-            }
+            LowerTypedTryLdGlobalByName(gate);
             break;
         case EcmaOpcode::INSTANCEOF_IMM8_V8:
             LowerInstanceOf(gate);
@@ -1790,12 +1788,18 @@ void TypeBytecodeLowering::LowerGetIterator(GateRef gate)
 
 void TypeBytecodeLowering::LowerTypedTryLdGlobalByName(GateRef gate)
 {
+    if (!enableLoweringBuiltin_) {
+        return;
+    }
     DISALLOW_GARBAGE_COLLECTION;
     LoadGlobalObjByNameTypeInfoAccessor tacc(thread_, circuit_, gate);
-    JSTaggedValue key = tacc.GetKeyTaggedValue();
+    auto keyOffset = builder_.Int32(tacc.GetKeyOffset());
+    GateRef jsFunc = argAcc_.GetFrameArgsIn(gate, FrameArgIdx::FUNC);
+    builder_.GlobalRecordCheck(keyOffset, jsFunc);
 
+    JSTaggedValue taggedKey = tacc.GetKeyTaggedValue();
     BuiltinIndex& builtin = BuiltinIndex::GetInstance();
-    auto index = builtin.GetBuiltinIndex(key);
+    auto index = builtin.GetBuiltinIndex(taggedKey);
     if (index == builtin.NOT_FOUND) {
         return;
     }

@@ -16,22 +16,23 @@
 #include "ecmascript/compiler/circuit_builder.h"
 
 #include "ecmascript/compiler/builtins/builtins_call_signature.h"
-#include "ecmascript/compiler/circuit_builder-inl.h"
 #include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/hcr_circuit_builder.h"
 #include "ecmascript/compiler/lcr_circuit_builder.h"
 #include "ecmascript/compiler/mcr_circuit_builder.h"
 #include "ecmascript/compiler/rt_call_signature.h"
+#include "ecmascript/compiler/share_gate_meta_data.h"
 #include "ecmascript/deoptimizer/deoptimizer.h"
+#include "ecmascript/global_dictionary.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/ic/proto_change_details.h"
+#include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/method.h"
-#include "ecmascript/js_array_iterator.h"
 
 namespace panda::ecmascript::kungfu {
 
@@ -888,4 +889,160 @@ GateRef CircuitBuilder::LoadBuiltinObject(size_t offset)
     return ret;
 }
 
+GateRef CircuitBuilder::GlobalRecordCheck(GateRef keyOffset, GateRef jsFunc)
+{
+    auto currentLabel = env_->GetCurrentLabel();
+    auto currentControl = currentLabel->GetControl();
+    auto currentDepend = currentLabel->GetDepend();
+    auto frameState = acc_.FindNearestFrameState(currentDepend);
+    GateRef ret = GetCircuit()->NewGate(circuit_->GlobalRecordCheck(),
+                                        MachineType::I64,
+                                        {currentControl, currentDepend, keyOffset, jsFunc, frameState},
+                                        GateType::AnyType());
+    currentLabel->SetControl(ret);
+    currentLabel->SetDepend(ret);
+    return ret;
+}
+
+GateRef CircuitBuilder::GetGlobalRecord(GateRef glue, GateRef key, GateRef gate)
+{
+    Label entry(env_);
+    env_->SubCfgEntry(&entry);
+    Label exit(env_);
+
+    DEFVALUE(result, env_, VariableType::JS_ANY(), Undefined());
+    GateRef glueGlobalEnvOffset = IntPtr(JSThread::GlueData::GetGlueGlobalEnvOffset(env_->Is32Bit()));
+    GateRef glueGlobalEnv = Load(VariableType::NATIVE_POINTER(), glue, glueGlobalEnvOffset);
+    GateRef globalRecord = GetGlobalEnvValue(VariableType::JS_ANY(), glueGlobalEnv, GlobalEnv::GLOBAL_RECORD);
+    GateRef recordEntry = FindEntryFromNameDictionary(glue, globalRecord, key, gate);
+    Label foundInGlobalRecord(env_);
+    Branch(Int32NotEqual(recordEntry, Int32(-1)), &foundInGlobalRecord, &exit);
+    Bind(&foundInGlobalRecord);
+    {
+        result = GetBoxFromGlobalDictionary(globalRecord, recordEntry);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env_->SubCfgExit();
+    return ret;
+}
+
+GateRef CircuitBuilder::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRef key, GateRef gate)
+{
+    Label funcEntry(env_);
+    env_->SubCfgEntry(&funcEntry);
+    Label exit(env_);
+    DEFVALUE(result, env_, VariableType::INT32(), Int32(-1));
+    GateRef capcityoffset =
+        PtrMul(IntPtr(JSTaggedValue::TaggedTypeSize()), IntPtr(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
+    GateRef dataoffset = IntPtr(TaggedArray::DATA_OFFSET);
+    GateRef capacity = GetInt32OfTInt(Load(VariableType::INT64(), elements, PtrAdd(dataoffset, capcityoffset)));
+    DEFVALUE(count, env_, VariableType::INT32(), Int32(1));
+    DEFVALUE(hash, env_, VariableType::INT32(), Int32(0));
+    // NameDictionary::hash
+    Label isSymbol(env_);
+    Label notSymbol(env_);
+    Label loopHead(env_);
+    Label loopEnd(env_);
+    Label afterLoop(env_);
+    Label beforeDefineHash(env_);
+    Branch(TaggedIsSymbol(key), &isSymbol, &notSymbol);
+    Bind(&isSymbol);
+    {
+        hash = GetInt32OfTInt(Load(VariableType::INT64(), key, IntPtr(JSSymbol::HASHFIELD_OFFSET)));
+        Jump(&beforeDefineHash);
+    }
+    Bind(&notSymbol);
+    {
+        Label isString(env_);
+        Label notString(env_);
+        Branch(TaggedIsString(key), &isString, &notString);
+        Bind(&isString);
+        {
+            hash = GetHashcodeFromString(glue, key, gate);
+            Jump(&beforeDefineHash);
+        }
+        Bind(&notString);
+        {
+            Jump(&beforeDefineHash);
+        }
+    }
+    Bind(&beforeDefineHash);
+    // GetFirstPosition(hash, size)
+    DEFVALUE(entry, env_, VariableType::INT32(), Int32And(*hash, Int32Sub(capacity, Int32(1))));
+    Jump(&loopHead);
+    LoopBegin(&loopHead);
+    {
+        GateRef element = GetKeyFromDictionary<NameDictionary>(elements, *entry);
+        Label isHole(env_);
+        Label notHole(env_);
+        Branch(TaggedIsHole(element), &isHole, &notHole);
+        {
+            Bind(&isHole);
+            {
+                Jump(&loopEnd);
+            }
+            Bind(&notHole);
+            {
+                Label isUndefined(env_);
+                Label notUndefined(env_);
+                Branch(TaggedIsUndefined(element), &isUndefined, &notUndefined);
+                {
+                    Bind(&isUndefined);
+                    {
+                        result = Int32(-1);
+                        Jump(&exit);
+                    }
+                    Bind(&notUndefined);
+                    {
+                        Label isMatch(env_);
+                        Label notMatch(env_);
+                        Branch(Equal(key, element), &isMatch, &notMatch);
+                        {
+                            Bind(&isMatch);
+                            {
+                                result = *entry;
+                                Jump(&exit);
+                            }
+                            Bind(&notMatch);
+                            {
+                                Jump(&loopEnd);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Bind(&loopEnd);
+        {
+            entry = GetNextPositionForHash(*entry, *count, capacity);
+            count = Int32Add(*count, Int32(1));
+            LoopEnd(&loopHead);
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env_->SubCfgExit();
+    return ret;
+}
+
+GateRef CircuitBuilder::GetBoxFromGlobalDictionary(GateRef object, GateRef entry)
+{
+    GateRef index = GetEntryIndexOfGlobalDictionary(entry);
+    GateRef offset = PtrAdd(ZExtInt32ToPtr(index), IntPtr(GlobalDictionary::ENTRY_VALUE_INDEX));
+    return GetValueFromTaggedArray(object, offset);
+}
+
+GateRef CircuitBuilder::GetEntryIndexOfGlobalDictionary(GateRef entry)
+{
+    return Int32Add(Int32(OrderTaggedHashTable<GlobalDictionary>::TABLE_HEADER_SIZE),
+                    Int32Mul(entry, Int32(GlobalDictionary::ENTRY_SIZE)));
+}
+
+GateRef CircuitBuilder::GetNextPositionForHash(GateRef last, GateRef count, GateRef size)
+{
+    auto nextOffset = Int32LSR(Int32Mul(count, Int32Add(count, Int32(1))), Int32(1));
+    return Int32And(Int32Add(last, nextOffset), Int32Sub(size, Int32(1)));
+}
 }  // namespace panda::ecmascript::kungfu

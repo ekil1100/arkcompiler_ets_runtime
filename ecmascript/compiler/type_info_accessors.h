@@ -17,7 +17,10 @@
 #define ECMASCRIPT_COMPILER_TYPE_INFO_ACCESSORS_H
 
 #include "ecmascript/compiler/argument_accessor.h"
+#include "ecmascript/compiler/circuit.h"
+#include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/pgo_type/pgo_type_manager.h"
+#include "ecmascript/js_thread.h"
 #include "ecmascript/ts_types/ts_manager.h"
 
 namespace panda::ecmascript::kungfu {
@@ -971,15 +974,18 @@ public:
 
 class LoadGlobalObjByNameTypeInfoAccessor final : public GlobalObjAccTypeInfoAccessor {
 public:
-    LoadGlobalObjByNameTypeInfoAccessor(const JSThread *thread,
-                                        Circuit *circuit,
-                                        GateRef gate)
+    LoadGlobalObjByNameTypeInfoAccessor(const JSThread* thread, Circuit* circuit, GateRef gate)
         : GlobalObjAccTypeInfoAccessor(thread, circuit, gate, AccessMode::LOAD)
     {
         key_ = acc_.GetValueIn(gate, 1);
     }
     NO_COPY_SEMANTIC(LoadGlobalObjByNameTypeInfoAccessor);
     NO_MOVE_SEMANTIC(LoadGlobalObjByNameTypeInfoAccessor);
+
+    GateRef GetKeyOffset() const
+    {
+        return acc_.GetConstantValue(key_);
+    }
 };
 
 class CreateObjWithBufferTypeInfoAccessor : public TypeInfoAccessor {

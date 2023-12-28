@@ -14,6 +14,8 @@
  */
 
 #include "ecmascript/compiler/mcr_circuit_builder.h"
+#include "ecmascript/compiler/gate.h"
+#include "ecmascript/compiler/share_gate_meta_data.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/stubs/runtime_stubs-inl.h"
 #include "ecmascript/stubs/runtime_stubs.h"
@@ -1063,6 +1065,28 @@ GateRef CircuitBuilder::GetHashcodeFromString(GateRef glue, GateRef value)
     {
         hashcode = GetInt32OfTInt(
             CallRuntime(glue, RTSTUB_ID(ComputeHashcode), Gate::InvalidGateRef, { value }, Circuit::NullGate()));
+        Store(VariableType::INT32(), glue, value, IntPtr(EcmaString::MIX_HASHCODE_OFFSET), *hashcode);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *hashcode;
+    SubCfgExit();
+    return ret;
+}
+
+GateRef CircuitBuilder::GetHashcodeFromString(GateRef glue, GateRef value, GateRef gate)
+{
+    Label subentry(env_);
+    SubCfgEntry(&subentry);
+    Label noRawHashcode(env_);
+    Label exit(env_);
+    DEFVALUE(hashcode, env_, VariableType::INT32(), Int32(0));
+    hashcode = Load(VariableType::INT32(), value, IntPtr(EcmaString::MIX_HASHCODE_OFFSET));
+    Branch(Int32Equal(*hashcode, Int32(0)), &noRawHashcode, &exit);
+    Bind(&noRawHashcode);
+    {
+        hashcode = GetInt32OfTInt(
+            CallRuntime(glue, RTSTUB_ID(ComputeHashcode), Gate::InvalidGateRef, { value }, gate));
         Store(VariableType::INT32(), glue, value, IntPtr(EcmaString::MIX_HASHCODE_OFFSET), *hashcode);
         Jump(&exit);
     }

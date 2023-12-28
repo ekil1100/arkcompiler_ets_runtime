@@ -20,6 +20,8 @@
 #include "ecmascript/compiler/bytecode_circuit_builder.h"
 #include "ecmascript/compiler/circuit_builder-inl.h"
 #include "ecmascript/compiler/combined_pass_visitor.h"
+#include "ecmascript/compiler/share_gate_meta_data.h"
+#include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript::kungfu {
 // TypeHCRLowering Process
@@ -103,14 +105,16 @@ public:
                     CompilationConfig* cmpCfg,
                     TSManager* tsManager,
                     Chunk* chunk,
-                    bool enableLoweringBuiltin)
+                    bool enableLoweringBuiltin,
+                    JSThread* thread)
         : PassVisitor(circuit, chunk, visitor),
           circuit_(circuit),
           acc_(circuit),
           builder_(circuit, cmpCfg),
           dependEntry_(circuit->GetDependRoot()),
           tsManager_(tsManager),
-          enableLoweringBuiltin_(enableLoweringBuiltin)
+          enableLoweringBuiltin_(enableLoweringBuiltin),
+          thread_(thread)
     {
         if (cmpCfg != nullptr) {
             loopHoistProfiling_ =cmpCfg->IsLoopHoistProfiling();
@@ -159,6 +163,7 @@ private:
     void LowerRangeCheckPredicate(GateRef gate);
     void LowerBuiltinPrototypeHClassCheck(GateRef gate);
     void LowerLoadBuiltinObject(GateRef gate);
+    void LowerGlobalRecordCheck(GateRef gate);
 
     enum class ArrayState : uint8_t {
         PACKED = 0,
@@ -267,6 +272,7 @@ private:
     [[maybe_unused]] TSManager *tsManager_ {nullptr};
     bool enableLoweringBuiltin_ {false};
     bool loopHoistProfiling_ {false};
+    JSThread* thread_ {nullptr};
 };
 }  // panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_TYPE_HCR_LOWERING_H
