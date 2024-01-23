@@ -40,10 +40,12 @@ private:
     GateRef VisitMUL(GateRef gate);
     GateRef VisitZEXT(GateRef gate);
     GateRef VisitSUB(GateRef gate);
+    GateRef VisitFMOD(GateRef gate);
     GateRef VisitSMOD(GateRef gate);
     GateRef VisitUMOD(GateRef gate);
     GateRef Int32Constant(int32_t val);
     GateRef Int64Constant(size_t val);
+    GateRef Float64Constant(double val);
     RangeInfo GetRange(GateRef gate) const;
     bool IsInt32Type(GateRef gate) const;
 

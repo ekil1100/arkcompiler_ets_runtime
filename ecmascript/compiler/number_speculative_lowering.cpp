@@ -421,9 +421,7 @@ void NumberSpeculativeLowering::VisitNumberMod(GateRef gate)
         UpdateRange(result, GetRange(gate));
         acc_.SetMachineType(gate, MachineType::I32);
     } else {
-        GateRef glue = acc_.GetGlueFromArgList();
-        result = builder_.CallNGCRuntime(glue, RTSTUB_ID(FloatMod),
-            Gate::InvalidGateRef, {left, right}, Circuit::NullGate());
+        result = CalculateDoubles<Op>(left, right);
         acc_.SetMachineType(gate, MachineType::F64);
     }
     acc_.SetGateType(gate, GateType::NJSValue());
@@ -730,6 +728,9 @@ GateRef NumberSpeculativeLowering::CalculateDoubles(GateRef left, GateRef right)
             break;
         case TypedBinOp::TYPED_MUL:
             res = builder_.DoubleMul(left, right, GateType::NJSValue());
+            break;
+        case TypedBinOp::TYPED_MOD:
+            res = builder_.BinaryArithmetic(circuit_->Fmod(), MachineType::F64, left, right, GateType::NJSValue());
             break;
         default:
             break;

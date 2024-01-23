@@ -35,6 +35,8 @@ GateRef ConstantFolding::VisitGate(GateRef gate)
             return VisitSUB(gate);
         case OpCode::MUL:
             return VisitMUL(gate);
+        case OpCode::FMOD:
+            return VisitFMOD(gate);
         case OpCode::SMOD:
             return VisitSMOD(gate);
         case OpCode::UMOD:
@@ -71,6 +73,25 @@ GateRef ConstantFolding::VisitZEXT(GateRef gate)
         }
     }
     return result;
+}
+
+GateRef ConstantFolding::VisitFMOD(GateRef gate)
+{
+    auto left = acc_.GetValueIn(gate, 0);
+    auto right = acc_.GetValueIn(gate, 1);
+
+    if (IsConstant(left) && IsConstant(right)) {
+        double lvalue = acc_.GetFloat64FromConstant(left);
+        double rvalue = acc_.GetFloat64FromConstant(right);
+        if (std::fmod(lvalue, rvalue) == 0 && lvalue < 0) {
+            return Float64Constant(-0.0);
+        } else if (rvalue != 0) {
+            return Float64Constant(std::fmod(lvalue, rvalue));
+        } else {
+            return Circuit::NullGate();
+        }
+    }
+    return Circuit::NullGate();
 }
 
 GateRef ConstantFolding::VisitSMOD(GateRef gate)
@@ -173,6 +194,13 @@ GateRef ConstantFolding::Int64Constant(size_t val)
 {
     AddFoldingCount();
     GateRef result = builder_.Int64(val);
+    return result;
+}
+
+GateRef ConstantFolding::Float64Constant(double val)
+{
+    AddFoldingCount();
+    GateRef result = builder_.Double(val);
     return result;
 }
 
