@@ -486,7 +486,14 @@ void MCRLowering::LowerCheckTaggedDoubleAndConvert(GateRef gate, GateRef frameSt
     if (dst == ValueType::INT32) {
         result = ConvertTaggedDoubleToInt32(value, exit);
     } else {
-        result = ConvertTaggedDoubleToFloat64(value);
+        builder_.CallRuntime(glue_, RTSTUB_ID(DebugAOTPrint), acc_.GetDep(gate), {value, builder_.Int64(0)}, gate);
+        GateRef tagged = builder_.ChangeTaggedPointerToInt64(value);
+        builder_.CallRuntime(glue_, RTSTUB_ID(DebugAOTPrint), acc_.GetDep(gate), {tagged, builder_.Int64(1)}, gate);
+        GateRef val = builder_.Int64Sub(tagged, builder_.Int64(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
+        builder_.CallRuntime(glue_, RTSTUB_ID(DebugAOTPrint), acc_.GetDep(gate), {value, builder_.Int64(2)}, gate);
+        result = builder_.CastInt64ToFloat64(val);
+        builder_.CallRuntime(glue_, RTSTUB_ID(DebugAOTPrint), acc_.GetDep(gate), {result, builder_.Int64(3)}, gate);
+        // result = ConvertTaggedDoubleToFloat64(value);
     }
     acc_.ReplaceGate(gate, builder_.GetState(), builder_.GetDepend(), result);
 }

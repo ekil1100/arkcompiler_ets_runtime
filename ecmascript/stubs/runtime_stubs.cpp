@@ -2448,13 +2448,12 @@ DEF_RUNTIME_STUBS(GetPropertyByName)
 DEF_RUNTIME_STUBS(DebugAOTPrint)
 {
     RUNTIME_STUBS_HEADER(DebugAOTPrint);
-    int ecmaOpcode = GetArg(argv, argc, 0).GetInt();
-    int path = GetArg(argv, argc, 1).GetInt();
-    std::string pathStr = path == 0 ? "slow path  " : "TYPED path ";
-
-    std::string data = JsStackInfo::BuildJsStackTrace(thread, true);
-    std::string opcode = kungfu::GetEcmaOpcodeStr(static_cast<EcmaOpcode>(ecmaOpcode));
-    LOG_ECMA(INFO) << "AOT " << pathStr << ": " << opcode << "@ " << data;
+    auto x = GetArg(argv, argc, 0);
+    int y = GetArg(argv, argc, 1).GetInt();
+    std::ostringstream oss;
+    oss << "DebugAOTPrint: " << y << ", ";
+    x.Dump(oss);
+    LOG_ECMA(INFO) << oss.str();
     return JSTaggedValue::Undefined().GetRawData();
 }
 

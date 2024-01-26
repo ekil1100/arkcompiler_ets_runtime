@@ -757,6 +757,10 @@ public:
 
     BINARY_CMP_METHOD_LIST_WITHOUT_BITWIDTH(CMP_BINARY_OP_WITHOUT_BITWIDTH)
 #undef CMP_BINARY_OP_WITHOUT_BITWIDTH
+    inline GateRef ChangeTaggedPointerToInt64(GateRef x, const char* comment = nullptr)
+    {
+        return circuit_->NewGate(circuit_->TaggedToInt64(), MachineType ::I64, {x}, GateType ::NJSValue(), comment);
+    }
 
 private:
     static constexpr uint32_t GATE_TWO_VALUESIN = 2;
@@ -770,7 +774,10 @@ private:
         return circuit_->NewGate(circuit_->OPCODEID(), MACHINETYPEID, { x }, GateType::NJSValue(), comment); \
     }
 
-    UNARY_ARITHMETIC_METHOD_LIST_WITH_BITWIDTH_PRIVATE(ARITHMETIC_UNARY_OP_WITH_BITWIDTH)
+    // inline GateRef ChangeTaggedPointerToInt64(GateRef x, const char* comment = nullptr)
+    // {
+    //     return circuit_->NewGate(circuit_->TaggedToInt64(), MachineType ::I64, {x}, GateType ::NJSValue(), comment);
+    // }
 #undef ARITHMETIC_UNARY_OP_WITH_BITWIDTH
 
     Circuit *circuit_ {nullptr};
