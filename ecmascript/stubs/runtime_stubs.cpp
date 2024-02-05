@@ -2621,10 +2621,47 @@ DEF_RUNTIME_STUBS(UpdateAOTHClass)
 DEF_RUNTIME_STUBS(DefineField)
 {
     RUNTIME_STUBS_HEADER(DefineField);
-    JSTaggedValue obj = GetArg(argv, argc, 0);  // 0: means the zeroth parameter
+    JSTaggedValue obj = GetArg(argv, argc, 0); // 0: means the zeroth parameter
+    JSTaggedValue propKey = GetArg(argv, argc, 1); // 1: means the first parameter
+    JSTaggedValue value = GetArg(argv, argc, 2); // 2: means the second parameter
+    return RuntimeDefineField(thread, obj, propKey, value).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(DefineFieldByName)
+{
+    RUNTIME_STUBS_HEADER(DefineField);
+    JSTaggedValue receiver = GetArg(argv, argc, 0); // 0: means the zeroth parameter
     JSTaggedValue propKey = GetArg(argv, argc, 1);  // 1: means the first parameter
     JSTaggedValue value = GetArg(argv, argc, 2);  // 2: means the second parameter
-    return RuntimeDefineField(thread, obj, propKey, value).GetRawData();
+    JSTaggedValue profile = GetArg(argv, argc, 3); // 3: means the third parameter
+    auto slotId = GetArg(argv, argc, 4).GetInt(); // 4: means the fourth parameter
+    auto receiverHandle = JSHandle<JSTaggedValue>(thread, receiver);
+    auto keyHandle = JSHandle<JSTaggedValue>(thread, propKey);
+    auto valueHandle = JSHandle<JSTaggedValue>(thread, value);
+    auto profileHandle = JSHandle<JSTaggedValue>(thread, profile);
+    // This opcode's ic slot may exceed the limit of 255, so we need to skip it until frontend fix it.
+    if (thread->GetEcmaVM()->GetJSOptions().IsEnableDefineField()) {
+        if (JSTaggedValue::HasProperty(thread, receiverHandle, keyHandle) || profileHandle->IsUndefined()) {
+            return RuntimeDefineField(thread, receiver, propKey, value).GetRawData();
+        }
+        // try find ic
+        auto profileTypeArray = ProfileTypeInfo::Cast(profile.GetTaggedObject());
+        JSTaggedValue firstValue = profileTypeArray->Get(slotId);
+        JSTaggedValue res = JSTaggedValue::Hole();
+        if (LIKELY(firstValue.IsHeapObject())) {
+            JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
+            res = ICRuntimeStub::TryStoreICByName(thread, receiver, firstValue, secondValue, value);
+        }
+        if (LIKELY(!res.IsHole())) {
+            // ic hit
+            return res.GetRawData();
+        } else if (!firstValue.IsHole()) {
+            // ic miss
+            return ICRuntimeStub::StoreICByName(thread, profileTypeArray, receiver, propKey, value, slotId)
+                .GetRawData();
+        }
+    }
+    return RuntimeDefineField(thread, receiver, propKey, value).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(CreatePrivateProperty)

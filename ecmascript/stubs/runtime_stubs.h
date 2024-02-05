@@ -360,6 +360,7 @@ using FastCallAotEntryType = JSTaggedValue (*)(uintptr_t glue, uint32_t argc, co
     V(SlowFlattenString)                  \
     V(NotifyConcurrentResult)             \
     V(DefineField)                        \
+    V(DefineFieldByName)                  \
     V(CreatePrivateProperty)              \
     V(DefinePrivateProperty)              \
     V(LdPrivateProperty)                  \

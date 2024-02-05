@@ -139,6 +139,7 @@ enum CommandValues {
     OPTION_HAP_ABC_SIZE,
     OPTION_COMPILER_NOCHECK,
     OPTION_FAST_AOT_COMPILE_MODE,
+    OPTION_COMPILER_DEFINEFIELD,
     OPTION_COMPILER_OPT_LOOP_PEELING,
     OPTION_COMPILER_OPT_ON_HEAP_CHECK,
     OPTION_COMPILER_PKG_INFO,
@@ -1445,6 +1446,16 @@ public:
         enableBranchProfiling_ = value;
     }
 
+    void SetEnableDefineField(bool value)
+    {
+        enableDefineField_ = value;
+    }
+
+    bool IsEnableDefineField() const
+    {
+        return enableDefineField_;
+    }
+
 private:
     static bool StartsWith(const std::string &haystack, const std::string &needle)
     {
@@ -1564,6 +1575,7 @@ private:
     bool enableLiteCG_ {false};
     bool enableTypedOpProfiler_ {false};
     bool enableBranchProfiling_ {true};
+    bool enableDefineField_ {false};
 };
 }  // namespace panda::ecmascript
 
