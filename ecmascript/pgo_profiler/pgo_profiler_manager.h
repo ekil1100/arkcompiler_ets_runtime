@@ -92,6 +92,8 @@ public:
         }
     }
 
+    void AsyncDestroy();
+
     // Factory
     std::shared_ptr<PGOProfiler> Build(EcmaVM *vm, bool isEnable)
     {
@@ -265,6 +267,29 @@ private:
     std::atomic_bool enableSignalSaving_ { false };
     os::memory::Mutex *mutex_ = new os::memory::Mutex();
     std::set<std::shared_ptr<PGOProfiler>> profilers_;
+};
+
+class DestroyTask : public Task {
+public:
+    explicit DestroyTask(PGOProfilerManager* manager, int32_t id): Task(id), manager_(manager) {};
+    virtual ~DestroyTask() override = default;
+
+    bool Run([[maybe_unused]] uint32_t threadIndex) override
+    {
+        manager_->Destroy();
+        return true;
+    }
+
+    TaskType GetTaskType() const override
+    {
+        return TaskType::PGO_SAVE_TASK;
+    }
+
+    NO_COPY_SEMANTIC(DestroyTask);
+    NO_MOVE_SEMANTIC(DestroyTask);
+
+private:
+    PGOProfilerManager* manager_;
 };
 } // namespace panda::ecmascript::pgo
 #endif  // ECMASCRIPT_PGO_PROFILER_MANAGER_H

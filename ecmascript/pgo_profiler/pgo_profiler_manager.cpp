@@ -129,4 +129,9 @@ void PGOProfilerManager::SavingSignalHandler(int signo)
 
     PGOProfilerManager::GetInstance()->ForceSave();
 }
+
+void PGOProfilerManager::AsyncDestroy()
+{
+    Taskpool::GetCurrentTaskpool()->PostTask(std::make_unique<DestroyTask>(this, GLOBAL_TASK_ID));
+}
 } // namespace panda::ecmascript::pgo

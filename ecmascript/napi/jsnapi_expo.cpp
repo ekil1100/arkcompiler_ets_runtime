@@ -3863,7 +3863,7 @@ void JSNApi::InitializePGOProfiler(const ecmascript::JSRuntimeOptions &options)
 
 void JSNApi::DestroyPGOProfiler()
 {
-    ecmascript::pgo::PGOProfilerManager::GetInstance()->Destroy();
+    ecmascript::pgo::PGOProfilerManager::GetInstance()->AsyncDestroy();
 }
 
 void JSNApi::DestroyAnDataManager()
