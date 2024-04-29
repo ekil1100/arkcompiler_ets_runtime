@@ -229,6 +229,11 @@ private:
             return true;
         }
 
+        TaskType GetTaskType() const override
+        {
+            return TaskType::PGO_PROFILER_TASK;
+        }
+
         NO_COPY_SEMANTIC(PGOProfilerTask);
         NO_MOVE_SEMANTIC(PGOProfilerTask);
     private:

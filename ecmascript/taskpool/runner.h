@@ -31,6 +31,7 @@ namespace panda::ecmascript {
 static constexpr uint32_t MIN_TASKPOOL_THREAD_NUM = 3;
 static constexpr uint32_t MAX_TASKPOOL_THREAD_NUM = 7;
 static constexpr uint32_t DEFAULT_TASKPOOL_THREAD_NUM = 0;
+static constexpr uint32_t MAX_PGO_PROFILER_TASK_COUNT = 3;
 
 class Runner {
 public:
@@ -86,6 +87,14 @@ private:
     void Run(uint32_t threadId);
     void SetRunTask(uint32_t threadId, Task *task);
 
+    uint32_t GetPGOProfilerTaskMaxCount() const
+    {
+        return std::min<uint32_t>(totalThreadNum_ / 2, MAX_PGO_PROFILER_TASK_COUNT);
+    }
+
+    bool PreRun(std::unique_ptr<Task>& task);
+    void PostRun(std::unique_ptr<Task>& task);
+
     std::vector<std::unique_ptr<std::thread>> threadPool_ {};
     TaskQueue taskQueue_ {};
     std::array<Task*, MAX_TASKPOOL_THREAD_NUM + 1> runningTask_;
@@ -93,6 +102,7 @@ private:
     std::vector<uint32_t> gcThreadId_ {};
     Mutex mtx_;
     Mutex mtxPool_;
+    std::atomic<uint32_t> pgoProfilerTaskCount_ {0};
 
     std::function<void(os::thread::native_handle_type)> prologueHook_;
     std::function<void(os::thread::native_handle_type)> epilogueHook_;

@@ -107,6 +107,26 @@ void Runner::SetRunTask(uint32_t threadId, Task *task)
     runningTask_[threadId] = task;
 }
 
+bool Runner::PreRun(std::unique_ptr<Task>& task)
+{
+    if (task->GetTaskType() == TaskType::PGO_PROFILER_TASK) {
+        if (pgoProfilerTaskCount_ < GetPGOProfilerTaskMaxCount()) {
+            pgoProfilerTaskCount_++;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Runner::PostRun(std::unique_ptr<Task>& task)
+{
+    if (task->GetTaskType() == TaskType::PGO_PROFILER_TASK) {
+        pgoProfilerTaskCount_--;
+    }
+}
+
 void Runner::Run(uint32_t threadId)
 {
     os::thread::native_handle_type thread = os::thread::GetNativeHandle();
@@ -114,8 +134,12 @@ void Runner::Run(uint32_t threadId)
     PrologueHook(thread);
     RecordThreadId();
     while (std::unique_ptr<Task> task = taskQueue_.PopTask()) {
+        if (!PreRun(task)) {
+            continue;
+        }
         SetRunTask(threadId, task.get());
         task->Run(threadId);
+        PostRun(task);
         SetRunTask(threadId, nullptr);
     }
     EpilogueHook(thread);
