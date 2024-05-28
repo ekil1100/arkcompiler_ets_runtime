@@ -1296,12 +1296,50 @@ void StubBuilder::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef ke
     Label exit(env);
     GateRef hclass = LoadHClass(receiver);
     GateRef metaData = GetPropertyMetaDataFromAttr(attr);
-    GateRef newClass = FindTransitions(glue, receiver, hclass, key, metaData);
+    GateRef newClass = FindTransitions(glue, hclass, key, metaData);
     Label findHClass(env);
     Label notFindHClass(env);
     BRANCH(Equal(newClass, Undefined()), &notFindHClass, &findHClass);
     Bind(&findHClass);
     {
+        GateRef isTSHClass = IsTSHClass(newClass);
+        Label setPrototype(env);
+        Label endSetPrototypeCheck(env);
+        Branch(isTSHClass, &setPrototype, &endSetPrototypeCheck);
+        Bind(&setPrototype);
+        {
+            GateRef prototype = GetPrototypeFromHClass(hclass);
+            StorePrototype(glue, newClass, prototype);
+            Jump(&endSetPrototypeCheck);
+        }
+        Bind(&endSetPrototypeCheck);
+        StoreHClass(glue, receiver, newClass);
+#if ECMASCRIPT_ENABLE_IC
+        Label needUpdateAOTHClass(env);
+        Label normalNotify(env);
+        Label endUpdate(env);
+        GateRef updateCondition = BoolAnd(isTSHClass, IsProtoTypeHClass(newClass));
+        Branch(updateCondition, &needUpdateAOTHClass, &normalNotify);
+        Bind(&needUpdateAOTHClass);
+        {
+            // Use single CallRuntime here to perform both function: UpadteAOTHClass and
+            // TryRestoreElementsKind, reducing the overhead of one CallRuntime
+            CallRuntime(glue, RTSTUB_ID(UpdateAOTHcAndTryResotreEleKind),
+                        { receiver, hclass, newClass, key });
+            Jump(&endUpdate);
+        }
+        Bind(&normalNotify);
+        {
+            // Because we currently only supports Fast ElementsKind
+            CallRuntime(glue, RTSTUB_ID(TryRestoreElementsKind), { receiver, newClass });
+            NotifyHClassChanged(glue, hclass, newClass);
+            Jump(&endUpdate);
+        }
+        Bind(&endUpdate);
+#else
+        // Because we currently only supports Fast ElementsKind
+        CallRuntime(glue, RTSTUB_ID(TryRestoreElementsKind), { receiver, newClass });
+#endif
         Jump(&exit);
     }
     Bind(&notFindHClass);
@@ -3850,7 +3888,7 @@ GateRef StubBuilder::IsArrayLengthWritable(GateRef glue, GateRef receiver)
     return ret;
 }
 
-GateRef StubBuilder::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, GateRef key, GateRef metaData)
+GateRef StubBuilder::FindTransitions(GateRef glue, GateRef hclass, GateRef key, GateRef metaData)
 {
     auto env = GetEnvironment();
     Label entry(env);
@@ -3858,7 +3896,7 @@ GateRef StubBuilder::FindTransitions(GateRef glue, GateRef receiver, GateRef hcl
     Label exit(env);
     GateRef transitionOffset = IntPtr(JSHClass::TRANSTIONS_OFFSET);
     GateRef transition = Load(VariableType::JS_POINTER(), hclass, transitionOffset);
-    DEFVARIABLE(result, VariableType::JS_ANY(), transition);
+    DEFVARIABLE(result, VariableType::JS_ANY(), Undefined());
 
     Label notUndefined(env);
     BRANCH(Equal(transition, Undefined()), &exit, &notUndefined);
@@ -3878,29 +3916,15 @@ GateRef StubBuilder::FindTransitions(GateRef glue, GateRef receiver, GateRef hcl
             GateRef cachedMetaData = GetPropertyMetaDataFromAttr(cachedAttr);
             Label keyMatch(env);
             Label isMatch(env);
-            Label notMatch(env);
-            BRANCH(Equal(cachedKey, key), &keyMatch, &notMatch);
+            Branch(Equal(cachedKey, key), &keyMatch, &exit);
             Bind(&keyMatch);
             {
-                BRANCH(Int32Equal(metaData, cachedMetaData), &isMatch, &notMatch);
+                BRANCH(Int32Equal(metaData, cachedMetaData), &isMatch, &exit);
                 Bind(&isMatch);
                 {
-                    GateRef oldHClass = LoadHClass(receiver);
-                    GateRef prototype = GetPrototypeFromHClass(oldHClass);
-                    StorePrototype(glue, transitionHClass, prototype);
-#if ECMASCRIPT_ENABLE_IC
-                    NotifyHClassChanged(glue, hclass, transitionHClass);
-#endif
-                    StoreHClass(glue, receiver, transitionHClass);
-                    // Because we currently only supports Fast ElementsKind
-                    CallRuntime(glue, RTSTUB_ID(TryRestoreElementsKind), { receiver, transitionHClass });
+                    result = transitionHClass;
                     Jump(&exit);
                 }
-            }
-            Bind(&notMatch);
-            {
-                result = Undefined();
-                Jump(&exit);
             }
         }
         Bind(&notWeak);
@@ -3908,35 +3932,15 @@ GateRef StubBuilder::FindTransitions(GateRef glue, GateRef receiver, GateRef hcl
             // need to find from dictionary
             GateRef entryA = FindEntryFromTransitionDictionary(glue, transition, key, metaData);
             Label isFound(env);
-            Label notFound(env);
-            BRANCH(Int32NotEqual(entryA, Int32(-1)), &isFound, &notFound);
+            Branch(Int32NotEqual(entryA, Int32(-1)), &isFound, &exit);
             Bind(&isFound);
             auto value = GetValueFromDictionary<TransitionsDictionary>(transition, entryA);
-            Label valueUndefined(env);
             Label valueNotUndefined(env);
-            BRANCH(Int64NotEqual(value, Undefined()), &valueNotUndefined,
-                &valueUndefined);
+            Branch(Int64NotEqual(value, Undefined()), &valueNotUndefined, &exit);
             Bind(&valueNotUndefined);
             {
                 GateRef newHClass = LoadObjectFromWeakRef(value);
                 result = newHClass;
-                GateRef oldHClass = LoadHClass(receiver);
-                GateRef prototype = GetPrototypeFromHClass(oldHClass);
-                StorePrototype(glue, newHClass, prototype);
-#if ECMASCRIPT_ENABLE_IC
-                NotifyHClassChanged(glue, hclass, newHClass);
-#endif
-                StoreHClass(glue, receiver, newHClass);
-                // Because we currently only supports Fast ElementsKind
-                CallRuntime(glue, RTSTUB_ID(TryRestoreElementsKind), { receiver, newHClass });
-                Jump(&exit);
-                Bind(&notFound);
-                result = Undefined();
-                Jump(&exit);
-            }
-            Bind(&valueUndefined);
-            {
-                result = Undefined();
                 Jump(&exit);
             }
         }

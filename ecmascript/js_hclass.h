@@ -502,6 +502,9 @@ public:
     static void RefreshUsers(const JSThread *thread, const JSHandle<JSHClass> &oldHclass,
                              const JSHandle<JSHClass> &newHclass);
 
+    static bool IsNeedNotifyHclassChangedForAotTransition(const JSThread *thread, const JSHandle<JSHClass> &hclass,
+                                                          JSTaggedValue key);
+
     void InitTSInheritInfo(const JSThread *thread);
 
     bool PUBLIC_API HasTSSubtyping() const;

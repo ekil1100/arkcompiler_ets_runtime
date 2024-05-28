@@ -605,7 +605,7 @@ ShortcutBoolOr([&]{ return first; }, [&]{ return second; })
     GateRef ComputeElementCapacity(GateRef oldLength);
     GateRef ComputeNonInlinedFastPropsCapacity(GateRef glue, GateRef oldLength,
                                                GateRef maxNonInlinedFastPropsCapacity);
-    GateRef FindTransitions(GateRef glue, GateRef receiver, GateRef hClass, GateRef key, GateRef attr);
+    GateRef FindTransitions(GateRef glue, GateRef hClass, GateRef key, GateRef attr);
     void TransitionForRepChange(GateRef glue, GateRef receiver, GateRef key, GateRef attr);
     void TransitToElementsKind(GateRef glue, GateRef receiver, GateRef value, GateRef kind);
     GateRef TaggedToRepresentation(GateRef value);
