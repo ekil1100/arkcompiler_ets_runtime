@@ -60,7 +60,9 @@ public:
         auto result = pool_.emplace(entryId, value);
         auto &entry = result.first->second;
         entry.SetEntryId(entryId);
-        valueToId_[value] = entryId;
+        valueToId_.emplace(value, entryId);
+        LOG_ECMA(ERROR) << "pool_ size: " << pool_.size() << ", reservedUsed_: " << reservedUsed_;
+        LOG_ECMA(ERROR) << "valueToId_ size: " << valueToId_.size();
         return true;
     }
 
@@ -98,6 +100,7 @@ public:
     void Clear()
     {
         pool_.clear();
+        valueToId_.clear();
         reservedUsed_ = 0;
     }
 
@@ -169,6 +172,7 @@ public:
             auto result = pool_.try_emplace(entryId);
             result.first->second.SetEntryId(entryId);
             result.first->second.ParseFromBinary(context, buffer, header);
+            valueToId_.emplace(result.first->second.GetData(), entryId);
         }
         return 1;
     }
