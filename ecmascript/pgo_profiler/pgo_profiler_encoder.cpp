@@ -239,15 +239,6 @@ bool PGOProfilerEncoder::InternalSave(const SaveTask *task)
     if (!isProfilingInitialized_) {
         return false;
     }
-    if ((mode_ == MERGE) && FileExist(realOutPath_.c_str())) {
-        PGOProfilerEncoder encoder(realOutPath_, hotnessThreshold_, mode_);
-        encoder.InitializeData();
-        PGOProfilerDecoder decoder(realOutPath_, hotnessThreshold_);
-        encoder.MergeWithExistProfile(*this, decoder, task);
-        auto saveAndRenameResult = encoder.SaveAndRename(task);
-        encoder.Destroy();
-        return saveAndRenameResult;
-    }
     return SaveAndRename(task);
 }
 

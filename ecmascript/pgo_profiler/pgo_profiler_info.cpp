@@ -828,6 +828,10 @@ bool PGORecordDetailInfos::ProcessToBinaryForLayout(
             LOG_ECMA(DEBUG) << "ProcessProfile: task is already terminate";
             return false;
         }
+        ASSERT(typeInfo.GetProfileType().IsRootType());
+        if (!typeInfo.GetProfileType().IsRootType()) {
+            continue;
+        }
         auto profileType = PGOSampleType(typeInfo.GetProfileType());
         size_t size = PGOHClassTreeDescInnerRef::CaculateSize(typeInfo);
         if (size == 0) {
