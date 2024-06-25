@@ -528,6 +528,15 @@
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DECL_VISIT_PROFILE_TYPE_INFO_ARRAY(BEGIN_OFFSET, REF_LENGTH, LENGTH)                                           \
+    template<VisitType visitType>                                                                                      \
+    void VisitRangeSlot(const EcmaObjectRangeVisitor& visitor)                                                         \
+    {                                                                                                                  \
+        ProfileTypeInfo::IterateProfileTypeInfo(this, (REF_LENGTH));                                                   \
+        ArrayBodyIterator<visitType, (BEGIN_OFFSET)>::IterateBody(this, visitor, (REF_LENGTH), (LENGTH));              \
+    }
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECL_VISIT_ARRAY(BEGIN_OFFSET, REF_LENGTH, LENGTH)                                                \
     template <VisitType visitType>                                                                        \
     void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                            \

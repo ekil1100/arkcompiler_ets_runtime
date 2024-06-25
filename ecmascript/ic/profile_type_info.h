@@ -243,7 +243,18 @@ public:
         Barriers::SetPrimitive(GetData(), GetJitCallCntBitfieldOffset(), count);
     }
 
-    DECL_VISIT_ARRAY(DATA_OFFSET, GetCacheLength(), GetCacheLength());
+    static inline void IterateProfileTypeInfo(TaggedObject* root, size_t refLength)
+    {
+        if (refLength >= INVALID_SLOT_INDEX) {
+            ProfileTypeInfo* info = ProfileTypeInfo::Cast(root);
+            auto value = info->Get(INVALID_SLOT_INDEX);
+            if (!value.IsHole()) {
+                LOG_ECMA(FATAL) << "IC slot 0xff must be Hole.";
+            }
+        }
+    }
+
+    DECL_VISIT_PROFILE_TYPE_INFO_ARRAY(DATA_OFFSET, GetCacheLength(), GetCacheLength());
 
     DECL_DUMP()
 
