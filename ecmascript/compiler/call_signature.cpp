@@ -2608,13 +2608,12 @@ DEF_CALL_SIGNATURE(SetDateValues)
 
 DEF_CALL_SIGNATURE(StartCallTimer)
 {
-    CallSignature index("StartCallTimer", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    const int numberOfArgs = 2;
+    CallSignature index("StartCallTimer", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = index;
-    // 3 : 3 input parameters
-    std::array<VariableType, 3> params = {
-        VariableType::NATIVE_POINTER(),
-        VariableType::JS_ANY(),
-        VariableType::BOOL()
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
     };
     callSign->SetParameters(params.data());
     callSign->SetGCLeafFunction(true);
@@ -2623,12 +2622,12 @@ DEF_CALL_SIGNATURE(StartCallTimer)
 
 DEF_CALL_SIGNATURE(EndCallTimer)
 {
-    CallSignature index("EndCallTimer", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    const int numberOfArgs = 2;
+    CallSignature index("EndCallTimer", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = index;
-    // 2 : 2 input parameters
-    std::array<VariableType, 2> params = {
-        VariableType::NATIVE_POINTER(),
-        VariableType::JS_ANY()
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
     };
     callSign->SetParameters(params.data());
     callSign->SetGCLeafFunction(true);

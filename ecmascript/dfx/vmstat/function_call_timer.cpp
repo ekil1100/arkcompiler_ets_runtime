@@ -14,39 +14,71 @@
  */
 
 #include "ecmascript/dfx/vmstat/function_call_timer.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 
 #include <iomanip>
 
 namespace panda::ecmascript {
-void FunctionCallTimer::StartCount(size_t id, bool isAot)
-{
-    PandaRuntimeTimer *callerTimer = currentTimer_;
-    auto calleeTimer = &callTimer_[id];
-    if (callerTimer != nullptr) {
-        calleeTimer->SetParent(callerTimer);
-    }
-    currentTimer_ = calleeTimer;
-    FunctionCallStat *calleeStat = nullptr;
-    if (isAot) {
-        calleeStat = &aotCallStat_[id];
-    } else {
-        calleeStat = &intCallStat_[id];
-    }
-    calleeTimer->Start(calleeStat, callerTimer);
-}
+const std::map<int32_t, std::string> FunctionCallTimer::TAG_MAP = {
+    {0, "unknown"},
+};
 
-void FunctionCallTimer::StopCount(Method *method)
+void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
 {
     size_t id = method->GetMethodId().GetOffset();
-    auto callee = &callTimer_[id];
-    if (callee != currentTimer_) {
-        LOG_ECMA(INFO) << "EndCallTimer and StartCallTimer have different functions. Current function: "
-                       << GetFullName(method) << "has been skipped";
+    CString name = GetFullName(method);
+    FunctionCallStat* stat = nullptr;
+    if (isAot) {
+        stat = TryGetAotStat(name, id);
+    } else {
+        stat = TryGetIntStat(name, id);
+    }
+    statStack_.push(stat);
+    PandaRuntimeTimer* caller = &timerStack_.top();
+    PandaRuntimeTimer callee;
+    callee.SetParent(caller);
+    callee.Start(stat, caller);
+    timerStack_.push(callee);
+    PrintMethodInfo(method, isAot, "start", tag);
+}
+
+void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
+{
+    size_t id = method->GetMethodId().GetOffset();
+    auto name = GetFullName(method);
+    PandaRuntimeTimer* callee = &timerStack_.top();
+    FunctionCallStat* stat = statStack_.top();
+    if (stat->GetId() != id) {
+        PrintStatStack();
+        LOG_TRACE(FATAL) << "[skip] method not match, start method: " << stat->Name() << ":" << stat->GetId()
+                         << ", is aot: " << stat->IsAot() << ", end method: " << name << ":" << id
+                         << ", is aot: " << isAot;
         return;
     }
+    if (stat->IsAot() && !isAot) {
+        LOG_TRACE(ERROR) << "[skip] deopt occur, start method: " << stat->Name() << ":" << stat->GetId()
+                         << ", is aot: " << stat->IsAot() << ", end method: " << name << ":" << id
+                         << ", is aot: " << isAot;
+        return;
+    }
+    callee->Stop();
+    statStack_.pop();
+    timerStack_.pop();
+    PrintMethodInfo(method, isAot, "end", tag);
+}
 
-    PandaRuntimeTimer *callerTimer = callee->Stop();
-    currentTimer_ = callerTimer;
+void FunctionCallTimer::PrintStat(FunctionCallStat* stat)
+{
+    LOG_TRACE(ERROR) << "[stat] name: " << stat->Name() << ", id: " << stat->GetId() << ", is aot: " << stat->IsAot();
+}
+
+void FunctionCallTimer::PrintStatStack()
+{
+    LOG_TRACE(ERROR) << "[stat stack] size: " << statStack_.size();
+    while (statStack_.size() > 0) {
+        PrintStat(statStack_.top());
+        statStack_.pop();
+    }
 }
 
 CString FunctionCallTimer::GetFullName(Method *method)
@@ -57,40 +89,12 @@ CString FunctionCallTimer::GetFullName(Method *method)
     return fullName;
 }
 
-void FunctionCallTimer::InitialStatAndTimer(Method *method, size_t methodId, bool isAot)
-{
-    if (isAot) {
-        auto iter = aotCallStat_.find(methodId);
-        if (iter == aotCallStat_.end()) {
-            CString funcName = GetFullName(method);
-            FunctionCallStat stat(funcName, isAot);
-            aotCallStat_[methodId] = stat;
-        }
-    } else {
-        auto iter = intCallStat_.find(methodId);
-        if (iter == intCallStat_.end()) {
-            CString funcName = GetFullName(method);
-            FunctionCallStat stat(funcName, isAot);
-            intCallStat_[methodId] = stat;
-        }
-    }
-
-    PandaRuntimeTimer timer;
-    callTimer_[methodId] = timer;
-}
-
 void FunctionCallTimer::PrintAllStats()
 {
-    LOG_ECMA(INFO) << "function call stat:";
     static constexpr int nameRightAdjustment = 45;
     static constexpr int numberRightAdjustment = 15;
-    LOG_ECMA(INFO) << std::right << std::setw(nameRightAdjustment) << "JS && TS Function Name"
-        << std::setw(numberRightAdjustment) << "Type"
-        << std::setw(numberRightAdjustment) << "Time(ns)" << std::setw(numberRightAdjustment) << "Count"
-        << std::setw(numberRightAdjustment) << "MaxTime(ns)"
-        << std::setw(numberRightAdjustment) << "AvgTime(ns)";
-    LOG_ECMA(INFO) << "============================================================="
-                   << "=============================================================";
+    static constexpr int length = nameRightAdjustment + numberRightAdjustment * 6;
+    std::string separator(length, '=');
 
     CVector<FunctionCallStat> callStatVec;
     for (auto &stat : aotCallStat_) {
@@ -105,17 +109,27 @@ void FunctionCallTimer::PrintAllStats()
             return a.TotalTime() > b.TotalTime();
     });
 
+    LOG_TRACE(ERROR) << "function call stat, total count: " << callStatVec.size();
+
+    LOG_TRACE(ERROR) << separator;
+    LOG_TRACE(ERROR) << std::left << std::setw(nameRightAdjustment) << "FunctionName" << std::right
+                     << std::setw(numberRightAdjustment) << "ID" << std::setw(numberRightAdjustment) << "Type"
+                     << std::setw(numberRightAdjustment) << "Time(ns)" << std::setw(numberRightAdjustment) << "Count"
+                     << std::setw(numberRightAdjustment) << "MaxTime(ns)" << std::setw(numberRightAdjustment)
+                     << "AvgTime(ns)";
+
     for (auto &stat : callStatVec) {
         if (stat.TotalCount() != 0) {
             CString type = stat.IsAot() ? "Aot" : "Interpreter";
-            LOG_ECMA(INFO) << std::right << std::setw(nameRightAdjustment) << stat.Name()
-                << std::setw(numberRightAdjustment) << type
-                << std::setw(numberRightAdjustment) << stat.TotalTime()
-                << std::setw(numberRightAdjustment) << stat.TotalCount()
-                << std::setw(numberRightAdjustment) << stat.MaxTime()
-                << std::setw(numberRightAdjustment) << stat.TotalTime() / stat.TotalCount();
+            LOG_TRACE(ERROR) << std::left << std::setw(nameRightAdjustment) << stat.Name() << std::right
+                             << std::setw(numberRightAdjustment) << stat.GetId() << std::setw(numberRightAdjustment)
+                             << type << std::setw(numberRightAdjustment) << stat.TotalTime()
+                             << std::setw(numberRightAdjustment) << stat.TotalCount()
+                             << std::setw(numberRightAdjustment) << stat.MaxTime() << std::setw(numberRightAdjustment)
+                             << stat.TotalTime() / stat.TotalCount();
         }
     }
+    LOG_TRACE(ERROR) << separator;
 }
 
 void FunctionCallTimer::ResetStat()
@@ -128,4 +142,55 @@ void FunctionCallTimer::ResetStat()
         stat.second.Reset();
     }
 }
+
+void FunctionCallTimer::PrintMethodInfo(Method* method, bool isAot, std::string state, std::string tag)
+{
+    auto name = GetFullName(method);
+    auto id = method->GetMethodId().GetOffset();
+    if (state == "start") {
+        count_[id]++;
+    }
+    auto count = std::to_string(count_[id]) + ":" + std::to_string(timerStack_.size());
+    LOG_TRACE(ERROR) << std::left << std::setw(5) << count << state << " at " << tag << " method: " << name
+                     << ", id: " << id << ", is aot: " << isAot;
+    if (state == "end") {
+        count_[id]--;
+    }
+    if (count_[id] < 0) {
+        LOG_TRACE(FATAL) << "count_[id] < 0";
+    }
 }
+
+void FunctionCallTimer::RegisteFunctionTimerSignal()
+{
+    signal(SIGNO, FunctionTimerSignalHandler);
+}
+
+void FunctionCallTimer::FunctionTimerSignalHandler(int signo)
+{
+    if (signo == SIGNO) {
+        GetInstance().PrintAllStats();
+        GetInstance().ResetStat();
+    }
+}
+
+FunctionCallStat* FunctionCallTimer::TryGetAotStat(CString name, size_t id, bool isAot)
+{
+    auto iter = aotCallStat_.find(id);
+    if (iter == aotCallStat_.end()) {
+        FunctionCallStat stat(name, id, isAot);
+        aotCallStat_[id] = stat;
+    }
+    return &aotCallStat_[id];
+}
+
+FunctionCallStat* FunctionCallTimer::TryGetIntStat(CString name, size_t id, bool isAot)
+{
+    auto iter = intCallStat_.find(id);
+    if (iter == intCallStat_.end()) {
+        FunctionCallStat stat(name, id, isAot);
+        intCallStat_[id] = stat;
+    }
+    return &intCallStat_[id];
+}
+} // namespace panda::ecmascript

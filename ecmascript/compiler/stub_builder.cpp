@@ -7834,7 +7834,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
     GateRef bitfield = 0;
     GateRef hclass = 0;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), { glue, func, False()});
+    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), {func, False()});
 #endif
     if (checkIsCallable) {
         BRANCH(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
@@ -8589,7 +8589,7 @@ GateRef StubBuilder::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNu
     GateRef bitfield = 0;
     GateRef hclass = 0;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), { glue, func, False()});
+    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), {func, False()});
 #endif
     if (checkIsCallable) {
         BRANCH(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);

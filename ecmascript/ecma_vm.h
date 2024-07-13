@@ -627,13 +627,6 @@ public:
         }
     }
 
-    void DumpCallTimeInfo();
-
-    FunctionCallTimer *GetCallTimer() const
-    {
-        return callTimer_;
-    }
-
     EcmaStringTable *GetEcmaStringTable() const
     {
         ASSERT(stringTable_ != nullptr);
@@ -941,7 +934,6 @@ private:
 #if defined(ECMASCRIPT_SUPPORT_TRACING)
     Tracing *tracing_ {nullptr};
 #endif
-    FunctionCallTimer *callTimer_ {nullptr};
     JSObjectResizingStrategy *strategy_ {nullptr};
 
     // For Native MethodLiteral

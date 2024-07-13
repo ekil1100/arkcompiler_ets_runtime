@@ -1368,7 +1368,7 @@ DECLARE_ASM_HANDLER(HandleResumegenerator)
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef frame = GetFrame(sp);
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), { glue, curFunc, False() });
+    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), {curFunc, False()});
 #endif
     Label isAsyncGeneratorObj(env);
     Label notAsyncGeneratorObj(env);
@@ -1404,7 +1404,7 @@ DECLARE_ASM_HANDLER(HandleDeprecatedResumegeneratorPrefV8)
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef frame = GetFrame(sp);
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), { glue, curFunc, False() });
+    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), {curFunc, False()});
 #endif
 
     Label isAsyncGeneratorObj(env);
@@ -2783,7 +2783,7 @@ DECLARE_ASM_HANDLER(HandleReturn)
     Bind(&tryContinue);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), { glue, curFunc });
+    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), {curFunc, False()});
 #endif
     GateRef currentSp = *varSp;
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
@@ -2880,7 +2880,7 @@ DECLARE_ASM_HANDLER(HandleReturnundefined)
     Bind(&tryContinue);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), { glue, curFunc });
+    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), {curFunc, False()});
 #endif
     GateRef currentSp = *varSp;
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
@@ -2987,7 +2987,7 @@ DECLARE_ASM_HANDLER(HandleSuspendgeneratorV8)
     Bind(&tryContinue);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), { glue, curFunc });
+    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), {curFunc, False()});
 #endif
     GateRef currentSp = *varSp;
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
@@ -3092,7 +3092,7 @@ DECLARE_ASM_HANDLER(HandleDeprecatedSuspendgeneratorPrefV8V8)
     Bind(&tryContinue);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), { glue, curFunc });
+    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), {curFunc, False()});
 #endif
     GateRef currentSp = *varSp;
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
@@ -3473,7 +3473,7 @@ DECLARE_ASM_HANDLER(HandleAsyncgeneratorresolveV8V8V8)
     Bind(&tryContinue);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), { glue, curFunc });
+    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), {curFunc, False()});
 #endif
     GateRef currentSp = *varSp;
     varSp = Load(VariableType::NATIVE_POINTER(), frame,

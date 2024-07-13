@@ -840,8 +840,10 @@ void RuntimeStubs::DebugPrintCustom(uintptr_t fmt, ...)
 
 void RuntimeStubs::DebugPrintInstruction([[maybe_unused]] uintptr_t argGlue, const uint8_t *pc)
 {
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    std::string data = JsStackInfo::BuildJsStackTrace(thread, true);
     BytecodeInstruction inst(pc);
-    LOG_INTERPRETER(DEBUG) << inst;
+    LOG_TRACE(ERROR) << "int: " << inst << data;
 }
 
 void RuntimeStubs::DebugOsrEntry([[maybe_unused]] uintptr_t argGlue, const uint8_t *codeEntry)
@@ -2809,11 +2811,11 @@ DEF_RUNTIME_STUBS(DebugAOTPrint)
     RUNTIME_STUBS_HEADER(DebugAOTPrint);
     int ecmaOpcode = GetArg(argv, argc, 0).GetInt();
     int path = GetArg(argv, argc, 1).GetInt();
-    std::string pathStr = path == 0 ? "slow path  " : "TYPED path ";
+    std::string pathStr = path == 0 ? "slow path" : "typed path";
 
     std::string data = JsStackInfo::BuildJsStackTrace(thread, true);
     std::string opcode = kungfu::GetEcmaOpcodeStr(static_cast<EcmaOpcode>(ecmaOpcode));
-    LOG_ECMA(INFO) << "AOT " << pathStr << ": " << opcode << "@ " << data;
+    LOG_TRACE(ERROR) << "aot " << pathStr << ": " << opcode << data;
     return JSTaggedValue::Undefined().GetRawData();
 }
 
@@ -3649,30 +3651,24 @@ DEF_RUNTIME_STUBS(HClassCloneWithAddProto)
     return JSHClass::CloneWithAddProto(thread, jshclass, key, proto).GetTaggedValue().GetRawData();
 }
 
-void RuntimeStubs::StartCallTimer(uintptr_t argGlue, JSTaggedType func, bool isAot)
+void RuntimeStubs::StartCallTimer(JSTaggedType func, bool isAot)
 {
-    auto thread =  JSThread::GlueToJSThread(argGlue);
     JSTaggedValue callTarget(func);
     Method *method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
     if (method->IsNativeWithCallField()) {
         return;
     }
-    size_t methodId = method->GetMethodId().GetOffset();
-    auto callTimer = thread->GetEcmaVM()->GetCallTimer();
-    callTimer->InitialStatAndTimer(method, methodId, isAot);
-    callTimer->StartCount(methodId, isAot);
+    FunctionCallTimer::GetInstance().StartCount(method, isAot);
 }
 
-void RuntimeStubs::EndCallTimer(uintptr_t argGlue, JSTaggedType func)
+void RuntimeStubs::EndCallTimer(JSTaggedType func, bool isAot)
 {
-    auto thread =  JSThread::GlueToJSThread(argGlue);
     JSTaggedValue callTarget(func);
     Method *method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
     if (method->IsNativeWithCallField()) {
         return;
     }
-    auto callTimer = thread->GetEcmaVM()->GetCallTimer();
-    callTimer->StopCount(method);
+    FunctionCallTimer::GetInstance().StopCount(method, isAot);
 }
 
 int32_t RuntimeStubs::StringGetStart(bool isUtf8, EcmaString *srcString, int32_t length, int32_t startIndex)
