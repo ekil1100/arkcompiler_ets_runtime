@@ -52,8 +52,8 @@ class EcmaVM;
 
 class FunctionCallStat : public PandaRuntimeCallerStat {
 public:
-    explicit FunctionCallStat(const CString& name, const size_t id, bool isAot)
-        : PandaRuntimeCallerStat(name), isAot_(isAot), id_(id)
+    explicit FunctionCallStat(const CString& name, const size_t id, bool isAot, std::string tag)
+        : PandaRuntimeCallerStat(name), isAot_(isAot), id_(id), tag_(tag)
     {
     }
     FunctionCallStat() = default;
@@ -69,15 +69,20 @@ public:
         return id_;
     }
 
+    std::string Tag() const
+    {
+        return tag_;
+    }
+
 private:
     bool isAot_ {false};
     size_t id_ {0};
+    std::string tag_;
 };
 
 class FunctionCallTimer {
 public:
     static constexpr int SIGNO = 39;
-    static const std::map<int32_t, std::string> TAG_MAP;
     static FunctionCallTimer& GetInstance()
     {
         static FunctionCallTimer instance;
@@ -93,8 +98,8 @@ public:
     void PrintMethodInfo(Method* method, bool isAot, std::string state, std::string tag);
     void RegisteFunctionTimerSignal();
     static void FunctionTimerSignalHandler(int signo);
-    FunctionCallStat* TryGetAotStat(CString name, size_t id, bool isAot = true);
-    FunctionCallStat* TryGetIntStat(CString name, size_t id, bool isAot = false);
+    FunctionCallStat* TryGetAotStat(CString name, size_t id, bool isAot = true, std::string tag = "unknown");
+    FunctionCallStat* TryGetIntStat(CString name, size_t id, bool isAot = false, std::string tag = "unknown");
     void PrintStatStack();
     void PrintStat(FunctionCallStat* stat);
 

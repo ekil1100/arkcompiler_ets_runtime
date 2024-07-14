@@ -19,19 +19,15 @@
 #include <iomanip>
 
 namespace panda::ecmascript {
-const std::map<int32_t, std::string> FunctionCallTimer::TAG_MAP = {
-    {0, "unknown"},
-};
-
 void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
 {
     size_t id = method->GetMethodId().GetOffset();
     CString name = GetFullName(method);
     FunctionCallStat* stat = nullptr;
     if (isAot) {
-        stat = TryGetAotStat(name, id);
+        stat = TryGetAotStat(name, id, isAot, tag);
     } else {
-        stat = TryGetIntStat(name, id);
+        stat = TryGetIntStat(name, id, isAot, tag);
     }
     statStack_.push(stat);
     PandaRuntimeTimer* caller = &timerStack_.top();
@@ -50,15 +46,17 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
     FunctionCallStat* stat = statStack_.top();
     if (stat->GetId() != id) {
         PrintStatStack();
-        LOG_TRACE(FATAL) << "[skip] method not match, start method: " << stat->Name() << ":" << stat->GetId()
-                         << ", is aot: " << stat->IsAot() << ", end method: " << name << ":" << id
-                         << ", is aot: " << isAot;
+        LOG_TRACE(FATAL) << "[error] method not match, start"
+                         << " at " << stat->Tag() << ", method: " << stat->Name() << ":" << stat->GetId()
+                         << ", is aot: " << stat->IsAot() << ", end"
+                         << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot;
         return;
     }
     if (stat->IsAot() && !isAot) {
-        LOG_TRACE(ERROR) << "[skip] deopt occur, start method: " << stat->Name() << ":" << stat->GetId()
-                         << ", is aot: " << stat->IsAot() << ", end method: " << name << ":" << id
-                         << ", is aot: " << isAot;
+        LOG_TRACE(ERROR) << "[skip] deopt occur, start"
+                         << " at " << stat->Tag() << ", method: " << stat->Name() << ":" << stat->GetId()
+                         << ", is aot: " << stat->IsAot() << ", end"
+                         << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot;
         return;
     }
     callee->Stop();
@@ -151,7 +149,7 @@ void FunctionCallTimer::PrintMethodInfo(Method* method, bool isAot, std::string 
         count_[id]++;
     }
     auto count = std::to_string(count_[id]) + ":" + std::to_string(timerStack_.size());
-    LOG_TRACE(ERROR) << std::left << std::setw(5) << count << state << " at " << tag << " method: " << name
+    LOG_TRACE(ERROR) << std::left << std::setw(5) << count << state << " at " << tag << ", method: " << name
                      << ", id: " << id << ", is aot: " << isAot;
     if (state == "end") {
         count_[id]--;
@@ -174,21 +172,21 @@ void FunctionCallTimer::FunctionTimerSignalHandler(int signo)
     }
 }
 
-FunctionCallStat* FunctionCallTimer::TryGetAotStat(CString name, size_t id, bool isAot)
+FunctionCallStat* FunctionCallTimer::TryGetAotStat(CString name, size_t id, bool isAot, std::string tag)
 {
     auto iter = aotCallStat_.find(id);
     if (iter == aotCallStat_.end()) {
-        FunctionCallStat stat(name, id, isAot);
+        FunctionCallStat stat(name, id, isAot, tag);
         aotCallStat_[id] = stat;
     }
     return &aotCallStat_[id];
 }
 
-FunctionCallStat* FunctionCallTimer::TryGetIntStat(CString name, size_t id, bool isAot)
+FunctionCallStat* FunctionCallTimer::TryGetIntStat(CString name, size_t id, bool isAot, std::string tag)
 {
     auto iter = intCallStat_.find(id);
     if (iter == intCallStat_.end()) {
-        FunctionCallStat stat(name, id, isAot);
+        FunctionCallStat stat(name, id, isAot, tag);
         intCallStat_[id] = stat;
     }
     return &intCallStat_[id];

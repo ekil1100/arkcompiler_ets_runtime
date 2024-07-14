@@ -2606,6 +2606,70 @@ DEF_CALL_SIGNATURE(SetDateValues)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
+DEF_CALL_SIGNATURE(StartCallTimerWithCommentId)
+{
+    const int numberOfArgs = 3;
+    CallSignature index(
+        "StartCallTimerWithCommentId", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::INT32(), // comment id
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
+DEF_CALL_SIGNATURE(EndCallTimerWithCommentId)
+{
+    const int numberOfArgs = 3;
+    CallSignature index(
+        "EndCallTimerWithCommentId", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::INT32(), // comment id
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
+DEF_CALL_SIGNATURE(StartCallTimerWithComment)
+{
+    const int numberOfArgs = 3;
+    CallSignature index(
+        "StartCallTimerWithComment", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::NATIVE_POINTER(), // comment create by CircuitBuilder::StringPtr()
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
+DEF_CALL_SIGNATURE(EndCallTimerWithComment)
+{
+    const int numberOfArgs = 3;
+    CallSignature index(
+        "EndCallTimerWithComment", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::NATIVE_POINTER(), // comment create by CircuitBuilder::StringPtr()
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
 DEF_CALL_SIGNATURE(StartCallTimer)
 {
     const int numberOfArgs = 2;

@@ -7831,10 +7831,25 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
     Label funcIsHeapObject(env);
     Label funcIsCallable(env);
     Label funcNotCallable(env);
+    Label callend(env);
     GateRef bitfield = 0;
     GateRef hclass = 0;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), {func, False()});
+    Label aotCall(env);
+    Label intCall(env);
+    Label callStart(env);
+    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &aotCall, &intCall);
+    Bind(&aotCall);
+    {
+        CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, True(), Int32(3)});
+        Jump(&callStart);
+    }
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, False(), Int32(3)});
+        Jump(&callStart);
+    }
+    Bind(&callStart);
 #endif
     if (checkIsCallable) {
         BRANCH(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
@@ -7845,7 +7860,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
         Bind(&funcNotCallable);
         {
             CallRuntime(glue, RTSTUB_ID(ThrowNotCallableException), {});
-            Jump(exit);
+            Jump(&callend);
         }
         Bind(&funcIsCallable);
     } else {
@@ -7879,8 +7894,18 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
         switch (mode) {
             case JSCallMode::CALL_THIS_ARG0: {
                 thisValue = data[0];
-                CallFastBuiltin(glue, nativeCode, func, thisValue, actualNumArgs, callField,
-                    method, &notFastBuiltinsArg0, exit, result, args, mode);
+                CallFastBuiltin(glue,
+                                nativeCode,
+                                func,
+                                thisValue,
+                                actualNumArgs,
+                                callField,
+                                method,
+                                &notFastBuiltinsArg0,
+                                &callend,
+                                result,
+                                args,
+                                mode);
                 Bind(&notFastBuiltinsArg0);
                 ret = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
                                      { nativeCode, glue, numArgs, func, newTarget, thisValue });
@@ -7893,8 +7918,18 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                 break;
             case JSCallMode::CALL_THIS_ARG1: {
                 thisValue = data[1];
-                CallFastBuiltin(glue, nativeCode, func, thisValue, actualNumArgs, callField,
-                    method, &notFastBuiltinsArg1, exit, result, args, mode);
+                CallFastBuiltin(glue,
+                                nativeCode,
+                                func,
+                                thisValue,
+                                actualNumArgs,
+                                callField,
+                                method,
+                                &notFastBuiltinsArg1,
+                                &callend,
+                                result,
+                                args,
+                                mode);
                 Bind(&notFastBuiltinsArg1);
                 ret = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
                                      { nativeCode, glue, numArgs, func, newTarget, thisValue, data[0]});
@@ -7907,8 +7942,18 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                 break;
             case JSCallMode::CALL_THIS_ARG2: {
                 thisValue = data[2]; // 2: this input
-                CallFastBuiltin(glue, nativeCode, func, thisValue, actualNumArgs, callField,
-                    method, &notFastBuiltinsArg2, exit, result, args, mode);
+                CallFastBuiltin(glue,
+                                nativeCode,
+                                func,
+                                thisValue,
+                                actualNumArgs,
+                                callField,
+                                method,
+                                &notFastBuiltinsArg2,
+                                &callend,
+                                result,
+                                args,
+                                mode);
                 Bind(&notFastBuiltinsArg2);
                 ret = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
                                      { nativeCode, glue, numArgs, func, newTarget, thisValue, data[0], data[1] });
@@ -7921,8 +7966,18 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                 break;
             case JSCallMode::CALL_THIS_ARG3: {
                 thisValue = data[3]; // 3: this input
-                CallFastBuiltin(glue, nativeCode, func, thisValue, actualNumArgs, callField,
-                    method, &notFastBuiltinsArg3, exit, result, args, mode);
+                CallFastBuiltin(glue,
+                                nativeCode,
+                                func,
+                                thisValue,
+                                actualNumArgs,
+                                callField,
+                                method,
+                                &notFastBuiltinsArg3,
+                                &callend,
+                                result,
+                                args,
+                                mode);
                 Bind(&notFastBuiltinsArg3);
                 ret = CallNGCRuntime(glue, RTSTUB_ID(PushCallArgsAndDispatchNative),
                                      { nativeCode, glue, numArgs, func,
@@ -7948,8 +8003,18 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                 break;
             case JSCallMode::DEPRECATED_CALL_CONSTRUCTOR_WITH_ARGV:
             case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV: {
-                CallFastBuiltin(glue, nativeCode, func, thisValue, actualNumArgs, callField,
-                    method, &notFastBuiltins, exit, result, args, mode);
+                CallFastBuiltin(glue,
+                                nativeCode,
+                                func,
+                                thisValue,
+                                actualNumArgs,
+                                callField,
+                                method,
+                                &notFastBuiltins,
+                                &callend,
+                                result,
+                                args,
+                                mode);
                 Bind(&notFastBuiltins);
                 ret = CallNGCRuntime(glue, RTSTUB_ID(PushCallNewAndDispatchNative),
                                      { glue, nativeCode, func, data[2], data[0], data[1] });
@@ -7982,7 +8047,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                 UNREACHABLE();
         }
         result->WriteVariable(ret);
-        Jump(exit);
+        Jump(&callend);
     }
 
     // 4. call nonNative
@@ -7995,7 +8060,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
         Bind(&funcIsClassConstructor);
         {
             CallRuntime(glue, RTSTUB_ID(ThrowCallConstructorException), {});
-            Jump(exit);
+            Jump(&callend);
         }
         Bind(&funcNotClassConstructor);
     }
@@ -8104,7 +8169,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                         UNREACHABLE();
                 }
                 result->WriteVariable(ret);
-                Jump(exit);
+                Jump(&callend);
             }
             Bind(&fastCallBridge);
             {
@@ -8185,7 +8250,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                         UNREACHABLE();
                 }
                 result->WriteVariable(ret);
-                Jump(exit);
+                Jump(&callend);
             }
         }
 
@@ -8277,7 +8342,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                         UNREACHABLE();
                 }
                 result->WriteVariable(ret);
-                Jump(exit);
+                Jump(&callend);
             }
             Bind(&slowCallBridge);
             {
@@ -8358,7 +8423,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
                         UNREACHABLE();
                 }
                 result->WriteVariable(ret);
-                Jump(exit);
+                Jump(&callend);
             }
         }
 
@@ -8466,7 +8531,7 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
             if (noNeedCheckException != nullptr) {
                 Jump(noNeedCheckException);
             } else {
-                Jump(exit);
+                Jump(&callend);
             }
         }
 
@@ -8566,9 +8631,22 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
         if (noNeedCheckException != nullptr) {
             Jump(noNeedCheckException);
         } else {
-            Jump(exit);
+            Jump(&callend);
         }
     }
+    Bind(&callend);
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label isAotCall(env);
+    Label end(env);
+    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &isAotCall, &end);
+    Bind(&isAotCall);
+    {
+        CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {func, True(), Int32(3)});
+        Jump(&end);
+    }
+    Bind(&end);
+#endif
+    Jump(exit);
 }
 
 GateRef StubBuilder::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNumArgs, GateRef jumpSize,
@@ -8589,7 +8667,21 @@ GateRef StubBuilder::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNu
     GateRef bitfield = 0;
     GateRef hclass = 0;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), {func, False()});
+    Label aotCall(env);
+    Label intCall(env);
+    Label callStart(env);
+    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &aotCall, &intCall);
+    Bind(&aotCall);
+    {
+        CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, True(), Int32(4)});
+        Jump(&callStart);
+    }
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, False(), Int32(4)});
+        Jump(&callStart);
+    }
+    Bind(&callStart);
 #endif
     if (checkIsCallable) {
         BRANCH(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
@@ -9363,6 +9455,17 @@ GateRef StubBuilder::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNu
         }
     }
     Bind(&exit);
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label isAotCall(env);
+    Label end(env);
+    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &isAotCall, &end);
+    Bind(&isAotCall);
+    {
+        CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {func, True(), Int32(4)});
+        Jump(&end);
+    }
+    Bind(&end);
+#endif
     auto ret = *result;
     env->SubCfgExit();
     return ret;

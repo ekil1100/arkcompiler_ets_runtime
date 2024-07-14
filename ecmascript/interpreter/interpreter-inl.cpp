@@ -869,7 +869,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterAot(JSThread *thread, JSHandle<Ge
     args[2] = context->GetThis().GetRawData(); // 2: this
     const JSTaggedType *prevFp = thread->GetLastLeaveFrame();
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::StartCallTimer(func.GetTaggedType(), true);
+    RuntimeStubs::StartCallTimerWithStrComment(func.GetTaggedType(), true, "GeneratorReEnterAot");
 #endif
     auto res = thread->GetCurrentEcmaContext()->ExecuteAot(method->GetNumArgs(), args.data(), prevFp, false);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER

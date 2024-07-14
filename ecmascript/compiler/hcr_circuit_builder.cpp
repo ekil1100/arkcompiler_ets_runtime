@@ -317,18 +317,13 @@ void CircuitBuilder::EndCallTimer(GateRef glue, GateRef gate, const std::vector<
     Label entry(env_);
     SubCfgEntry(&entry);
     Label aotCall(this);
-    Label intCall(this);
     Label exit(this);
     GateRef func = args.at(0);
     GateRef isAot = args.at(1);
-    BRANCH_CIR2(JudgeAotAndFastCall(func, JudgeMethodType::HAS_AOT), &aotCall, &intCall);
+    BRANCH_CIR2(JudgeAotAndFastCall(func, JudgeMethodType::HAS_AOT), &aotCall, &exit);
     Bind(&aotCall);
     {
         CallNGCRuntime(glue, gate, RTSTUB_ID(EndCallTimer), {func, isAot}, useLabel);
-        Jump(&exit);
-    }
-    Bind(&intCall);
-    {
         Jump(&exit);
     }
     Bind(&exit);

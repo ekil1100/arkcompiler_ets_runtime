@@ -3651,24 +3651,72 @@ DEF_RUNTIME_STUBS(HClassCloneWithAddProto)
     return JSHClass::CloneWithAddProto(thread, jshclass, key, proto).GetTaggedValue().GetRawData();
 }
 
-void RuntimeStubs::StartCallTimer(JSTaggedType func, bool isAot)
+void RuntimeStubs::StartCallTimerWithStrComment(JSTaggedType func, bool isAot, std::string comment)
 {
     JSTaggedValue callTarget(func);
-    Method *method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
+    Method* method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
     if (method->IsNativeWithCallField()) {
         return;
     }
-    FunctionCallTimer::GetInstance().StartCount(method, isAot);
+    FunctionCallTimer::GetInstance().StartCount(method, isAot, comment);
+}
+
+void RuntimeStubs::EndCallTimerWithStrComment(JSTaggedType func, bool isAot, std::string comment)
+{
+    JSTaggedValue callTarget(func);
+    Method* method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
+    if (method->IsNativeWithCallField()) {
+        return;
+    }
+    FunctionCallTimer::GetInstance().StopCount(method, isAot, comment);
+}
+
+void RuntimeStubs::StartCallTimerWithComment(JSTaggedType func, bool isAot, uintptr_t comment)
+{
+    const char* str = reinterpret_cast<const char*>(comment);
+    const char* tag = str == nullptr ? "unknown" : str;
+    StartCallTimerWithStrComment(func, isAot, tag);
+}
+
+void RuntimeStubs::EndCallTimerWithComment(JSTaggedType func, bool isAot, uintptr_t comment)
+{
+    const char* str = reinterpret_cast<const char*>(comment);
+    const char* tag = str == nullptr ? "unknown" : str;
+    EndCallTimerWithStrComment(func, isAot, tag);
+}
+
+static const std::map<int32_t, std::string> comments = {
+    {0, "HandleResumegenerator"},
+    {1, "HandleReturn"},
+    {2, "HandleDeprecatedResumegeneratorPrefV8"},
+    {3, "JSCallDispatchForBaseline"},
+    {4, "JSCallDispatch"},
+    {5, "BaselineResumegeneratorStubBuilder::GenerateCircuit"},
+    {6, "BaselineDeprecatedResumegeneratorPrefV8StubBuilder::GenerateCircuit"},
+    {7, "HandleReturnundefined"},
+    {8, "HandleSuspendgeneratorV8"},
+    {9, "HandleDeprecatedSuspendgeneratorPrefV8V8"},
+    {10, "HandleAsyncgeneratorresolveV8V8V8"},
+};
+
+void RuntimeStubs::StartCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment)
+{
+    StartCallTimerWithStrComment(func, isAot, comments.at(comment));
+}
+
+void RuntimeStubs::EndCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment)
+{
+    EndCallTimerWithStrComment(func, isAot, comments.at(comment));
+}
+
+void RuntimeStubs::StartCallTimer(JSTaggedType func, bool isAot)
+{
+    StartCallTimerWithStrComment(func, isAot);
 }
 
 void RuntimeStubs::EndCallTimer(JSTaggedType func, bool isAot)
 {
-    JSTaggedValue callTarget(func);
-    Method *method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
-    if (method->IsNativeWithCallField()) {
-        return;
-    }
-    FunctionCallTimer::GetInstance().StopCount(method, isAot);
+    EndCallTimerWithStrComment(func, isAot);
 }
 
 int32_t RuntimeStubs::StringGetStart(bool isUtf8, EcmaString *srcString, int32_t length, int32_t startIndex)

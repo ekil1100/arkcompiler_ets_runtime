@@ -2073,7 +2073,7 @@ void BaselineResumegeneratorStubBuilder::GenerateCircuit()
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef frame = GetFrame(sp);
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), {curFunc, False()});
+    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {curFunc, False(), Int32(5)});
 #endif
     Label isAsyncGeneratorObj(env);
     Label notAsyncGeneratorObj(env);
@@ -4728,7 +4728,7 @@ void BaselineDeprecatedResumegeneratorPrefV8StubBuilder::GenerateCircuit()
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(GetFrame(sp));
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), {curFunc, False()});
+    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {curFunc, False(), Int32(6)});
 #endif
 
     Label isAsyncGeneratorObj(env);

@@ -521,7 +521,7 @@ JSTaggedValue JSFunction::InvokeOptimizedEntrypoint(JSThread *thread, JSHandle<J
     JSTaggedValue res;
     std::vector<JSTaggedType> args;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::StartCallTimer(mainFunc.GetTaggedType(), true);
+    RuntimeStubs::StartCallTimerWithStrComment(mainFunc.GetTaggedType(), true, "InvokeOptimizedEntrypoint");
 #endif
     if (mainFunc->IsCompiledFastCall()) {
         // do not modify this log to INFO, this will call many times
@@ -535,7 +535,7 @@ JSTaggedValue JSFunction::InvokeOptimizedEntrypoint(JSThread *thread, JSHandle<J
         res = thread->GetCurrentEcmaContext()->ExecuteAot(actualNumArgs, args.data(), prevFp, false);
     }
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::EndCallTimer(mainFunc.GetTaggedType(), true);
+    RuntimeStubs::EndCallTimerWithStrComment(mainFunc.GetTaggedType(), true, "InvokeOptimizedEntrypoint");
 #endif
     if (thread->HasPendingException()) {
         return thread->GetException();
@@ -584,7 +584,7 @@ JSTaggedValue JSFunction::InvokeOptimizedEntrypoint(JSThread *thread, JSHandle<J
     bool needPushArgv = numArgs != info->GetArgsNumber();
     const JSTaggedType *prevFp = thread->GetLastLeaveFrame();
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::StartCallTimer(func.GetTaggedType(), true);
+    RuntimeStubs::StartCallTimerWithStrComment(func.GetTaggedType(), true, "InvokeOptimizedEntrypoint2");
 #endif
     if (func->IsCompiledFastCall()) {
         if (needPushArgv) {
@@ -599,7 +599,7 @@ JSTaggedValue JSFunction::InvokeOptimizedEntrypoint(JSThread *thread, JSHandle<J
             info->GetArgs(), prevFp, needPushArgv);
     }
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::EndCallTimer(func.GetTaggedType(), true);
+    RuntimeStubs::EndCallTimerWithStrComment(func.GetTaggedType(), true, "InvokeOptimizedEntrypoint2");
 #endif
     return resultValue;
 }
