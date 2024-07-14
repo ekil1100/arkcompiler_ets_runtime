@@ -738,6 +738,13 @@ GateRef BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb)
         byteCodeToJSGates_[iterator.Index()].emplace_back(gate);
         jsGatesToByteCode_[gate] = iterator.Index();
     }
+    // #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    //     CircuitBuilder builder(circuit_);
+    //     GateAccessor acc(circuit_);
+    //     GateRef glue = acc.GetGlueFromArgList();
+    //     GateRef func = acc.GetValueIn(GetFrameArgs(), static_cast<size_t>(FrameArgIdx::FUNC));
+    //     builder.EndCallTimer(glue, Circuit::NullGate(), {func, builder.True()}, true);
+    // #endif
     return gate;
 }
 

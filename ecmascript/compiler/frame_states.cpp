@@ -426,6 +426,12 @@ void FrameStateBuilder::InitEntryBB(const BytecodeRegion &bb)
     ASSERT(bcBuilder_->IsFirstBasicBlock(1)); // 1: is firstBlock
     auto liveout = GetFrameLiveoutBefore(1); // 1: is firstBlock
     GateRef frameArgs = bcBuilder_->GetFrameArgs();
+    // #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    //     CircuitBuilder builder(circuit_);
+    //     GateRef func = acc_.GetValueIn(frameArgs, static_cast<size_t>(FrameArgIdx::FUNC));
+    //     GateRef glue = acc_.GetGlueFromArgList();
+    //     builder.StartCallTimer(glue, frameArgs, {func, builder.True()}, true);
+    // #endif
     if (liveout->TestBit(envIndex_)) {
         GateRef jsFunc = acc_.GetValueIn(frameArgs, static_cast<size_t>(FrameArgIdx::FUNC));
         auto env = acc_.GetInitialEnvGate(frameContext->currentDepend_, jsFunc);

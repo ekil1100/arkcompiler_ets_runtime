@@ -3551,6 +3551,12 @@ DEF_RUNTIME_STUBS(DeoptHandler)
     deopt.CollectVregs(deoptBundle, shift);
     kungfu::DeoptType type = static_cast<kungfu::DeoptType>(GetArg(argv, argc, 0).GetInt());
     deopt.UpdateAndDumpDeoptInfo(type);
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    FrameHandler frameHandler(thread);
+    auto func = frameHandler.GetFunction();
+    EndCallTimerWithStrComment(func.GetRawData(), true, "DeoptHandler");
+    StartCallTimerWithStrComment(func.GetRawData(), false, "DeoptHandler");
+#endif
     return deopt.ConstructAsmInterpretFrame();
 }
 

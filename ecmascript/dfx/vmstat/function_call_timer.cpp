@@ -44,19 +44,18 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
     auto name = GetFullName(method);
     PandaRuntimeTimer* callee = &timerStack_.top();
     FunctionCallStat* stat = statStack_.top();
-    if (stat->GetId() != id) {
-        PrintStatStack();
-        LOG_TRACE(FATAL) << "[error] method not match, start"
-                         << " at " << stat->Tag() << ", method: " << stat->Name() << ":" << stat->GetId()
-                         << ", is aot: " << stat->IsAot() << ", end"
+    if (isAot && method->IsDeoptimized() && tag != "DeoptHandler") {
+        LOG_TRACE(ERROR) << "[skip] aot end timer because of deopt, end"
                          << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot;
         return;
     }
-    if (stat->IsAot() && !isAot) {
-        LOG_TRACE(ERROR) << "[skip] deopt occur, start"
+    if (stat->GetId() != id) {
+        PrintStatStack();
+        LOG_TRACE(FATAL) << "[error] method not match, end"
+                         << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot
+                         << ", last start"
                          << " at " << stat->Tag() << ", method: " << stat->Name() << ":" << stat->GetId()
-                         << ", is aot: " << stat->IsAot() << ", end"
-                         << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot;
+                         << ", is aot: " << stat->IsAot();
         return;
     }
     callee->Stop();
@@ -67,7 +66,8 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
 
 void FunctionCallTimer::PrintStat(FunctionCallStat* stat)
 {
-    LOG_TRACE(ERROR) << "[stat] name: " << stat->Name() << ", id: " << stat->GetId() << ", is aot: " << stat->IsAot();
+    LOG_TRACE(ERROR) << "[stat:" << statStack_.size() << "] name: " << stat->Name()
+                     << ", id: " << stat->GetId() << ", is aot: " << stat->IsAot();
 }
 
 void FunctionCallTimer::PrintStatStack()
@@ -83,7 +83,7 @@ CString FunctionCallTimer::GetFullName(Method *method)
 {
     CString funcName(method->GetMethodName());
     CString recordName = method->GetRecordNameStr();
-    CString fullName = funcName + "@" + recordName;
+    CString fullName = recordName + "." + funcName;
     return fullName;
 }
 
