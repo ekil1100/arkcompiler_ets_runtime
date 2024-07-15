@@ -719,6 +719,13 @@ GateRef BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb)
     ASSERT(bb.succs.empty());
     auto &iterator = bb.GetBytecodeIterator();
     const BytecodeInfo& bytecodeInfo = iterator.GetBytecodeInfo();
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    GateRef timerState = frameStateBuilder_.GetCurrentState();
+    GateRef timerDepend = frameStateBuilder_.GetCurrentDepend();
+    GateRef frameArgs = argAcc_.GetFrameArgs();
+    auto timer = circuit_->NewGate(circuit_->EndCallTimer(), {timerState, timerDepend, frameArgs});
+    frameStateBuilder_.UpdateStateDepend(timerState, timer);
+#endif
     GateRef state = frameStateBuilder_.GetCurrentState();
     GateRef depend = frameStateBuilder_.GetCurrentDepend();
     GateRef gate = Circuit::NullGate();
@@ -738,13 +745,6 @@ GateRef BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb)
         byteCodeToJSGates_[iterator.Index()].emplace_back(gate);
         jsGatesToByteCode_[gate] = iterator.Index();
     }
-    // #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    //     CircuitBuilder builder(circuit_);
-    //     GateAccessor acc(circuit_);
-    //     GateRef glue = acc.GetGlueFromArgList();
-    //     GateRef func = acc.GetValueIn(GetFrameArgs(), static_cast<size_t>(FrameArgIdx::FUNC));
-    //     builder.EndCallTimer(glue, Circuit::NullGate(), {func, builder.True()}, true);
-    // #endif
     return gate;
 }
 
@@ -802,6 +802,13 @@ void BytecodeCircuitBuilder::BuildSubCircuit()
                 bb.dependCache = stackCheck;
                 frameStateBuilder_.UpdateStateDepend(stackCheck, stackCheck);
             }
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+            GateRef state = frameStateBuilder_.GetCurrentState();
+            GateRef depend = frameStateBuilder_.GetCurrentDepend();
+            GateRef frameArgs = argAcc_.GetFrameArgs();
+            auto timer = circuit_->NewGate(circuit_->StartCallTimer(), {state, depend, frameArgs});
+            frameStateBuilder_.UpdateStateDepend(state, timer);
+#endif
             auto &bbNext = RegionAt(bb.id + 1);
             frameStateBuilder_.MergeIntoSuccessor(bb, bbNext);
             bbNext.expandedPreds.push_back({bb.id, bb.end, false});

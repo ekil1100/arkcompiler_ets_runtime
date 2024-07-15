@@ -316,6 +316,8 @@ private:
     void LowerTypedCall(GateRef gate);
     void LowerTypedFastCall(GateRef gate);
     void LowerCheckSafePointAndStackOver(GateRef gate);
+    void LowerStartCallTimer(GateRef gate);
+    void LowerEndCallTimer(GateRef gate);
     void LowerLdPrivateProperty(GateRef gate);
     void LowerStPrivateProperty(GateRef gate);
     void LowerTestIn(GateRef gate);

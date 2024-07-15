@@ -77,6 +77,12 @@ void SlowPathLowering::CallRuntimeLowering()
             case OpCode::CHECK_SAFEPOINT_AND_STACKOVER:
                 LowerCheckSafePointAndStackOver(gate);
                 break;
+            case OpCode::START_CALL_TIMER:
+                LowerStartCallTimer(gate);
+                break;
+            case OpCode::END_CALL_TIMER:
+                LowerEndCallTimer(gate);
+                break;
             case OpCode::GET_ENV:
                 LowerGetEnv(gate);
                 break;
@@ -3568,6 +3574,24 @@ void SlowPathLowering::LowerTypedFastCall(GateRef gate)
     const CallSignature *cs = RuntimeStubCSigns::GetOptimizedFastCallSign();
     GateRef result = builder_.Call(cs, glue_, code, depend, args, gate, "callFastAOT");
     ReplaceHirWithPendingException(gate, state, result, result);
+}
+
+void SlowPathLowering::LowerStartCallTimer(GateRef gate)
+{
+    Environment env(gate, circuit_, &builder_);
+    GateRef frameArgs = acc_.GetFrameArgs(gate);
+    GateRef func = acc_.GetValueIn(frameArgs, static_cast<size_t>(FrameArgIdx::FUNC));
+    builder_.StartCallTimer(glue_, gate, {func, builder_.True()}, true);
+    acc_.ReplaceGate(gate, builder_.GetState(), builder_.GetDepend(), Circuit::NullGate());
+}
+
+void SlowPathLowering::LowerEndCallTimer(GateRef gate)
+{
+    Environment env(gate, circuit_, &builder_);
+    GateRef frameArgs = acc_.GetFrameArgs(gate);
+    GateRef func = acc_.GetValueIn(frameArgs, static_cast<size_t>(FrameArgIdx::FUNC));
+    builder_.EndCallTimer(glue_, gate, {func, builder_.True()}, true);
+    acc_.ReplaceGate(gate, builder_.GetState(), builder_.GetDepend(), Circuit::NullGate());
 }
 
 void SlowPathLowering::LowerCheckSafePointAndStackOver(GateRef gate)

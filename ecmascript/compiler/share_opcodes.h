@@ -26,34 +26,36 @@
 
 namespace panda::ecmascript::kungfu {
 
-#define SHARE_IMMUTABLE_META_DATA_CACHE_LIST(V)                                                 \
-    V(CircuitRoot, CIRCUIT_ROOT, GateFlags::NONE_FLAG, 0, 0, 0)                                 \
-    V(StateEntry, STATE_ENTRY, GateFlags::ROOT, 0, 0, 0)                                        \
-    V(DependEntry, DEPEND_ENTRY, GateFlags::ROOT, 0, 0, 0)                                      \
-    V(OrdinaryBlock, ORDINARY_BLOCK, GateFlags::CONTROL, 1, 0, 0)                               \
-    V(DefaultCase, DEFAULT_CASE, GateFlags::CONTROL, 1, 0, 0)                                   \
-    V(ReturnList, RETURN_LIST, GateFlags::ROOT, 0, 0, 0)                                        \
-    V(ArgList, ARG_LIST, GateFlags::ROOT, 0, 0, 0)                                              \
-    V(Dead, DEAD, GateFlags::NONE_FLAG, 0, 0, 0)                                                \
-    V(Throw, THROW, GateFlags::CONTROL, 1, 1, 1)                                                \
-    V(LoopExit, LOOP_EXIT, GateFlags::CONTROL, 1, 0, 0)                                         \
-    V(LoopExitDepend, LOOP_EXIT_DEPEND, GateFlags::FIXED, 1, 1, 0)                              \
-    V(LoopExitValue, LOOP_EXIT_VALUE, GateFlags::FIXED, 1, 0, 1)                                \
-    V(DependRelay, DEPEND_RELAY, GateFlags::FIXED, 1, 1, 0)                                     \
-    V(IfTrue, IF_TRUE, GateFlags::CONTROL, 1, 0, 0)                                             \
-    V(IfFalse, IF_FALSE, GateFlags::CONTROL, 1, 0, 0)                                           \
-    V(IfSuccess, IF_SUCCESS, GateFlags::CONTROL, 1, 0, 0)                                       \
-    V(IfException, IF_EXCEPTION, GateFlags::CONTROL, 1, 1, 0)                                   \
-    V(GetException, GET_EXCEPTION, GateFlags::NONE_FLAG, 1, 1, 0)                               \
-    V(GetUnsharedConstPool, GET_UNSHARED_CONSTPOOL, GateFlags::NO_WRITE, 0, 0, 1)               \
-    V(GetGlobalEnv, GET_GLOBAL_ENV, GateFlags::NO_WRITE, 0, 1, 0)                               \
-    V(GetSuperConstructor, GET_SUPER_CONSTRUCTOR, GateFlags::NO_WRITE, 1, 1, 1)                 \
-    V(CheckSafePointAndStackOver, CHECK_SAFEPOINT_AND_STACKOVER, GateFlags::NO_WRITE, 1, 1, 0)  \
-    V(DeoptCheck, DEOPT_CHECK, GateFlags::NO_WRITE, 1, 1, 3)                                    \
-    V(LoopBack, LOOP_BACK, GateFlags::CONTROL, 1, 0, 0)                                         \
-    V(Return, RETURN, GateFlags::HAS_ROOT, 1, 1, 1)                                             \
-    V(ReturnVoid, RETURN_VOID, GateFlags::HAS_ROOT, 1, 1, 0)                                    \
-    V(StateSplit, STATE_SPLIT, GateFlags::CHECKABLE, 1, 1, 0)                                   \
+#define SHARE_IMMUTABLE_META_DATA_CACHE_LIST(V)                                                              \
+    V(CircuitRoot, CIRCUIT_ROOT, GateFlags::NONE_FLAG, 0, 0, 0)                                              \
+    V(StateEntry, STATE_ENTRY, GateFlags::ROOT, 0, 0, 0)                                                     \
+    V(DependEntry, DEPEND_ENTRY, GateFlags::ROOT, 0, 0, 0)                                                   \
+    V(OrdinaryBlock, ORDINARY_BLOCK, GateFlags::CONTROL, 1, 0, 0)                                            \
+    V(DefaultCase, DEFAULT_CASE, GateFlags::CONTROL, 1, 0, 0)                                                \
+    V(ReturnList, RETURN_LIST, GateFlags::ROOT, 0, 0, 0)                                                     \
+    V(ArgList, ARG_LIST, GateFlags::ROOT, 0, 0, 0)                                                           \
+    V(Dead, DEAD, GateFlags::NONE_FLAG, 0, 0, 0)                                                             \
+    V(Throw, THROW, GateFlags::CONTROL, 1, 1, 1)                                                             \
+    V(LoopExit, LOOP_EXIT, GateFlags::CONTROL, 1, 0, 0)                                                      \
+    V(LoopExitDepend, LOOP_EXIT_DEPEND, GateFlags::FIXED, 1, 1, 0)                                           \
+    V(LoopExitValue, LOOP_EXIT_VALUE, GateFlags::FIXED, 1, 0, 1)                                             \
+    V(DependRelay, DEPEND_RELAY, GateFlags::FIXED, 1, 1, 0)                                                  \
+    V(IfTrue, IF_TRUE, GateFlags::CONTROL, 1, 0, 0)                                                          \
+    V(IfFalse, IF_FALSE, GateFlags::CONTROL, 1, 0, 0)                                                        \
+    V(IfSuccess, IF_SUCCESS, GateFlags::CONTROL, 1, 0, 0)                                                    \
+    V(IfException, IF_EXCEPTION, GateFlags::CONTROL, 1, 1, 0)                                                \
+    V(GetException, GET_EXCEPTION, GateFlags::NONE_FLAG, 1, 1, 0)                                            \
+    V(GetUnsharedConstPool, GET_UNSHARED_CONSTPOOL, GateFlags::NO_WRITE, 0, 0, 1)                            \
+    V(GetGlobalEnv, GET_GLOBAL_ENV, GateFlags::NO_WRITE, 0, 1, 0)                                            \
+    V(GetSuperConstructor, GET_SUPER_CONSTRUCTOR, GateFlags::NO_WRITE, 1, 1, 1)                              \
+    V(CheckSafePointAndStackOver, CHECK_SAFEPOINT_AND_STACKOVER, GateFlags::NO_WRITE, 1, 1, 0)               \
+    V(StartCallTimer, START_CALL_TIMER, GateFlags::CHECKABLE, 1, 1, 0)                                       \
+    V(EndCallTimer, END_CALL_TIMER, GateFlags::CHECKABLE, 1, 1, 0)                                           \
+    V(DeoptCheck, DEOPT_CHECK, GateFlags::NO_WRITE, 1, 1, 3)                                                 \
+    V(LoopBack, LOOP_BACK, GateFlags::CONTROL, 1, 0, 0)                                                      \
+    V(Return, RETURN, GateFlags::HAS_ROOT, 1, 1, 1)                                                          \
+    V(ReturnVoid, RETURN_VOID, GateFlags::HAS_ROOT, 1, 1, 0)                                                 \
+    V(StateSplit, STATE_SPLIT, GateFlags::CHECKABLE, 1, 1, 0)                                                \
     V(GetEnv, GET_ENV, GateFlags::NO_WRITE, 0, 1, 1)
 
 #define SHARE_GATE_META_DATA_LIST_WITH_VALUE_IN(V)                                       \
