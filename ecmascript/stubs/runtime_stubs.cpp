@@ -3703,16 +3703,38 @@ static const std::map<int32_t, std::string> comments = {
     {8, "HandleSuspendgeneratorV8"},
     {9, "HandleDeprecatedSuspendgeneratorPrefV8V8"},
     {10, "HandleAsyncgeneratorresolveV8V8V8"},
+    {11, "LowerCallTimer"},
+    {12, "BaselineAsyncgeneratorresolveV8V8V8StubBuilder::GenerateCircuit"},
+    {13, "BaselineDeprecatedSuspendgeneratorPrefV8V8StubBuilder::GenerateCircuit"},
+    {14, "BaselineSuspendgeneratorV8StubBuilder::GenerateCircuit"},
+    {15, "LowerNewFastCall"},
+    {16, "LowerFastSuperCall"},
+    {17, "LowerFastCall1"},
+    {18, "LowerFastCall2"},
+    {19, "LowerFastSuperCall2"},
+    {20, "LowerFastSuperCall3"},
 };
 
 void RuntimeStubs::StartCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment)
 {
-    StartCallTimerWithStrComment(func, isAot, comments.at(comment));
+    std::string tag;
+    if (comments.find(comment) == comments.end()) {
+        tag = std::to_string(comment);
+    } else {
+        tag = comments.at(comment);
+    }
+    StartCallTimerWithStrComment(func, isAot, tag);
 }
 
 void RuntimeStubs::EndCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment)
 {
-    EndCallTimerWithStrComment(func, isAot, comments.at(comment));
+    std::string tag;
+    if (comments.find(comment) == comments.end()) {
+        tag = std::to_string(comment);
+    } else {
+        tag = comments.at(comment);
+    }
+    EndCallTimerWithStrComment(func, isAot, tag);
 }
 
 void RuntimeStubs::StartCallTimer(JSTaggedType func, bool isAot)

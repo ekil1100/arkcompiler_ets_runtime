@@ -277,7 +277,96 @@ GateRef CircuitBuilder::CallNGCRuntime(GateRef glue, GateRef gate, int index, co
     }
 }
 
-void CircuitBuilder::StartCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef> &args, bool useLabel)
+void CircuitBuilder::StartCallTimerInterpreter(GateRef glue,
+                                               GateRef gate,
+                                               const std::vector<GateRef>& args,
+                                               bool useLabel)
+{
+    (void)glue;
+    (void)gate;
+    (void)args;
+    (void)useLabel;
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label entry(env_);
+    SubCfgEntry(&entry);
+    Label intCall(this);
+    Label exit(this);
+    GateRef func = args.at(0);
+    GateRef commentId = args.at(2);
+    BRANCH_CIR2(JudgeAotAndFastCall(func, JudgeMethodType::HAS_AOT), &exit, &intCall);
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue, gate, RTSTUB_ID(StartCallTimerWithCommentId), {func, False(), commentId}, useLabel);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    SubCfgExit();
+#endif
+}
+
+void CircuitBuilder::StartCallTimerWithCommentId(GateRef glue,
+                                                 GateRef gate,
+                                                 const std::vector<GateRef>& args,
+                                                 bool useLabel)
+{
+    (void)glue;
+    (void)gate;
+    (void)args;
+    (void)useLabel;
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label entry(env_);
+    SubCfgEntry(&entry);
+    Label aotCall(this);
+    Label intCall(this);
+    Label exit(this);
+    GateRef func = args.at(0);
+    GateRef isAot = args.at(1);
+    GateRef commentId = args.at(2);
+    BRANCH_CIR2(JudgeAotAndFastCall(func, JudgeMethodType::HAS_AOT), &aotCall, &intCall);
+    Bind(&aotCall);
+    {
+        CallNGCRuntime(glue, gate, RTSTUB_ID(StartCallTimerWithCommentId), {func, isAot, commentId}, useLabel);
+        Jump(&exit);
+    }
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue, gate, RTSTUB_ID(StartCallTimerWithCommentId), {func, False(), commentId}, useLabel);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    SubCfgExit();
+#endif
+}
+
+void CircuitBuilder::EndCallTimerWithCommentId(GateRef glue,
+                                               GateRef gate,
+                                               const std::vector<GateRef>& args,
+                                               bool useLabel)
+{
+    (void)glue;
+    (void)gate;
+    (void)args;
+    (void)useLabel;
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label entry(env_);
+    SubCfgEntry(&entry);
+    Label aotCall(this);
+    Label exit(this);
+    GateRef func = args.at(0);
+    GateRef isAot = args.at(1);
+    GateRef commentId = args.at(2);
+    BRANCH_CIR2(JudgeAotAndFastCall(func, JudgeMethodType::HAS_AOT), &aotCall, &exit);
+    Bind(&aotCall);
+    {
+        CallNGCRuntime(glue, gate, RTSTUB_ID(EndCallTimerWithCommentId), {func, isAot, commentId}, useLabel);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    SubCfgExit();
+#endif
+}
+
+void CircuitBuilder::StartCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef>& args, bool useLabel)
 {
     (void)glue;
     (void)gate;
@@ -307,7 +396,7 @@ void CircuitBuilder::StartCallTimer(GateRef glue, GateRef gate, const std::vecto
 #endif
 }
 
-void CircuitBuilder::EndCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef> &args, bool useLabel)
+void CircuitBuilder::EndCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef>& args, bool useLabel)
 {
     (void)glue;
     (void)gate;

@@ -605,7 +605,7 @@ void BaselineAsyncgeneratorresolveV8V8V8StubBuilder::GenerateCircuit()
     Bind(&tryContinue);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), {curFunc, False()});
+    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {curFunc, False(), Int32(12)});
 #endif
     GateRef currentSp = *varSp;
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
@@ -4887,7 +4887,7 @@ void BaselineDeprecatedSuspendgeneratorPrefV8V8StubBuilder::GenerateCircuit()
     Bind(&tryContinue);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), {curFunc, False()});
+    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {curFunc, False(), Int32(13)});
 #endif
     GateRef currentSp = *varSp;
     varSp = Load(VariableType::NATIVE_POINTER(), frame,
@@ -5718,7 +5718,7 @@ void BaselineSuspendgeneratorV8StubBuilder::GenerateCircuit()
     Bind(&tryContinue);
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
     GateRef curFunc = GetFunctionFromFrame(frame);
-    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimer), {curFunc, False()});
+    CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {curFunc, False(), Int32(14)});
 #endif
     GateRef currentSp = *varSp;
     varSp = Load(VariableType::NATIVE_POINTER(), frame,

@@ -1593,21 +1593,23 @@ void TypedBytecodeLowering::SpeculateCallBuiltin(GateRef gate, GateRef func, con
     }
 }
 
-void TypedBytecodeLowering::LowerFastCall(GateRef gate, GateRef func,
-    const std::vector<GateRef> &argsFastCall, bool isNoGC)
+void TypedBytecodeLowering::LowerFastCall(GateRef gate,
+                                          [[maybe_unused]] GateRef func,
+                                          const std::vector<GateRef>& argsFastCall,
+                                          bool isNoGC)
 {
-    builder_.StartCallTimer(glue_, gate, {func, builder_.True()}, true);
+    builder_.StartCallTimerInterpreter(glue_, gate, {func, builder_.True(), builder_.Int32(40)}, true);
     GateRef result = builder_.TypedFastCall(gate, argsFastCall, isNoGC);
-    builder_.EndCallTimer(glue_, gate, {func, builder_.True()}, true);
     acc_.ReplaceGate(gate, builder_.GetState(), builder_.GetDepend(), result);
 }
 
-void TypedBytecodeLowering::LowerCall(GateRef gate, GateRef func,
-    const std::vector<GateRef> &args, bool isNoGC)
+void TypedBytecodeLowering::LowerCall(GateRef gate,
+                                      [[maybe_unused]] GateRef func,
+                                      const std::vector<GateRef>& args,
+                                      bool isNoGC)
 {
-    builder_.StartCallTimer(glue_, gate, {func, builder_.True()}, true);
+    builder_.StartCallTimerInterpreter(glue_, gate, {func, builder_.True(), builder_.Int32(41)}, true);
     GateRef result = builder_.TypedCall(gate, args, isNoGC);
-    builder_.EndCallTimer(glue_, gate, {func, builder_.True()}, true);
     acc_.ReplaceGate(gate, builder_.GetState(), builder_.GetDepend(), result);
 }
 

@@ -45,8 +45,8 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
     PandaRuntimeTimer* callee = &timerStack_.top();
     FunctionCallStat* stat = statStack_.top();
     if (isAot && method->IsDeoptimized() && tag != "DeoptHandler") {
-        LOG_TRACE(ERROR) << "[skip] aot end timer because of deopt, end"
-                         << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot;
+        LOG_TRACE(INFO) << "[skip] aot end timer because of deopt, end"
+                        << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot;
         return;
     }
     if (stat->GetId() != id) {
@@ -66,13 +66,13 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
 
 void FunctionCallTimer::PrintStat(FunctionCallStat* stat)
 {
-    LOG_TRACE(ERROR) << "[stat:" << statStack_.size() << "] name: " << stat->Name()
-                     << ", id: " << stat->GetId() << ", is aot: " << stat->IsAot();
+    LOG_TRACE(DEBUG) << "[stat:" << statStack_.size() << "] start at " << stat->Tag()
+                     << ", name: " << stat->Name() << ", id: " << stat->GetId() << ", is aot: " << stat->IsAot();
 }
 
 void FunctionCallTimer::PrintStatStack()
 {
-    LOG_TRACE(ERROR) << "[stat stack] size: " << statStack_.size();
+    LOG_TRACE(DEBUG) << "[stat stack] size: " << statStack_.size();
     while (statStack_.size() > 0) {
         PrintStat(statStack_.top());
         statStack_.pop();
@@ -107,27 +107,27 @@ void FunctionCallTimer::PrintAllStats()
             return a.TotalTime() > b.TotalTime();
     });
 
-    LOG_TRACE(ERROR) << "function call stat, total count: " << callStatVec.size();
+    LOG_TRACE(INFO) << "function call stat, total count: " << callStatVec.size();
 
-    LOG_TRACE(ERROR) << separator;
-    LOG_TRACE(ERROR) << std::left << std::setw(nameRightAdjustment) << "FunctionName" << std::right
-                     << std::setw(numberRightAdjustment) << "ID" << std::setw(numberRightAdjustment) << "Type"
-                     << std::setw(numberRightAdjustment) << "Time(ns)" << std::setw(numberRightAdjustment) << "Count"
-                     << std::setw(numberRightAdjustment) << "MaxTime(ns)" << std::setw(numberRightAdjustment)
-                     << "AvgTime(ns)";
+    LOG_TRACE(INFO) << separator;
+    LOG_TRACE(INFO) << std::left << std::setw(nameRightAdjustment) << "FunctionName" << std::right
+                    << std::setw(numberRightAdjustment) << "ID" << std::setw(numberRightAdjustment) << "Type"
+                    << std::setw(numberRightAdjustment) << "Time(ns)" << std::setw(numberRightAdjustment)
+                    << "Count" << std::setw(numberRightAdjustment) << "MaxTime(ns)"
+                    << std::setw(numberRightAdjustment) << "AvgTime(ns)";
 
     for (auto &stat : callStatVec) {
         if (stat.TotalCount() != 0) {
             CString type = stat.IsAot() ? "Aot" : "Interpreter";
-            LOG_TRACE(ERROR) << std::left << std::setw(nameRightAdjustment) << stat.Name() << std::right
-                             << std::setw(numberRightAdjustment) << stat.GetId() << std::setw(numberRightAdjustment)
-                             << type << std::setw(numberRightAdjustment) << stat.TotalTime()
-                             << std::setw(numberRightAdjustment) << stat.TotalCount()
-                             << std::setw(numberRightAdjustment) << stat.MaxTime() << std::setw(numberRightAdjustment)
-                             << stat.TotalTime() / stat.TotalCount();
+            LOG_TRACE(INFO) << std::left << std::setw(nameRightAdjustment) << stat.Name() << std::right
+                            << std::setw(numberRightAdjustment) << stat.GetId()
+                            << std::setw(numberRightAdjustment) << type << std::setw(numberRightAdjustment)
+                            << stat.TotalTime() << std::setw(numberRightAdjustment) << stat.TotalCount()
+                            << std::setw(numberRightAdjustment) << stat.MaxTime()
+                            << std::setw(numberRightAdjustment) << stat.TotalTime() / stat.TotalCount();
         }
     }
-    LOG_TRACE(ERROR) << separator;
+    LOG_TRACE(INFO) << separator;
 }
 
 void FunctionCallTimer::ResetStat()
@@ -149,7 +149,7 @@ void FunctionCallTimer::PrintMethodInfo(Method* method, bool isAot, std::string 
         count_[id]++;
     }
     auto count = std::to_string(count_[id]) + ":" + std::to_string(timerStack_.size());
-    LOG_TRACE(ERROR) << std::left << std::setw(5) << count << state << " at " << tag << ", method: " << name
+    LOG_TRACE(DEBUG) << std::left << std::setw(5) << count << state << " at " << tag << ", method: " << name
                      << ", id: " << id << ", is aot: " << isAot;
     if (state == "end") {
         count_[id]--;

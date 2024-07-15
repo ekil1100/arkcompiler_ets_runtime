@@ -760,6 +760,23 @@ void AsmInterpreterCall::DispatchCall(ExtendedAssembler *assembler, Register pcR
 {
     Register glueRegister = __ GlueRegister();
     Label dispatchCall;
+
+    // #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    //     // __ PushCppCalleeSaveRegisters();
+    //     __ Pushq(rdi);
+    //     __ Pushq(rsi);
+    //     __ Pushq(r12);
+    //     __ Movq(r12, rdi); // func
+    //     __ Movq(Immediate(true), rsi); // isAot
+    //     __ Movq(Immediate(20), rdx); // comment
+    //     __ Movq(kungfu::RuntimeStubCSigns::ID_StartCallTimerWithCommentId, r12);
+    //     __ CallAssemblerStub(r12, false);
+    //     __ Popq(r12);
+    //     __ Popq(rsi);
+    //     __ Popq(rdi);
+    //     // __ PopCppCalleeSaveRegisters();
+    // #endif
+
     // align 16 bytes
     __ Testq(15, rsp);  // 15: low 4 bits must be 0b0000
     __ Jnz(&dispatchCall);

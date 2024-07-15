@@ -7835,15 +7835,9 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
     GateRef bitfield = 0;
     GateRef hclass = 0;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    Label aotCall(env);
     Label intCall(env);
     Label callStart(env);
-    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &aotCall, &intCall);
-    Bind(&aotCall);
-    {
-        CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, True(), Int32(3)});
-        Jump(&callStart);
-    }
+    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
     Bind(&intCall);
     {
         CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, False(), Int32(3)});
@@ -8635,17 +8629,17 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
         }
     }
     Bind(&callend);
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    Label isAotCall(env);
-    Label end(env);
-    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &isAotCall, &end);
-    Bind(&isAotCall);
-    {
-        CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {func, True(), Int32(3)});
-        Jump(&end);
-    }
-    Bind(&end);
-#endif
+    // #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    //     Label isAotCall(env);
+    //     Label end(env);
+    //     BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &isAotCall, &end);
+    //     Bind(&isAotCall);
+    //     {
+    //         CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {func, True(), Int32(3)});
+    //         Jump(&end);
+    //     }
+    //     Bind(&end);
+    // #endif
     Jump(exit);
 }
 
@@ -8667,15 +8661,9 @@ GateRef StubBuilder::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNu
     GateRef bitfield = 0;
     GateRef hclass = 0;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    Label aotCall(env);
     Label intCall(env);
     Label callStart(env);
-    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &aotCall, &intCall);
-    Bind(&aotCall);
-    {
-        CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, True(), Int32(4)});
-        Jump(&callStart);
-    }
+    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
     Bind(&intCall);
     {
         CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, False(), Int32(4)});
@@ -9455,17 +9443,17 @@ GateRef StubBuilder::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNu
         }
     }
     Bind(&exit);
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    Label isAotCall(env);
-    Label end(env);
-    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &isAotCall, &end);
-    Bind(&isAotCall);
-    {
-        CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {func, True(), Int32(4)});
-        Jump(&end);
-    }
-    Bind(&end);
-#endif
+    // #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    //     Label isAotCall(env);
+    //     Label end(env);
+    //     BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &isAotCall, &end);
+    //     Bind(&isAotCall);
+    //     {
+    //         CallNGCRuntime(glue, RTSTUB_ID(EndCallTimerWithCommentId), {func, True(), Int32(4)});
+    //         Jump(&end);
+    //     }
+    //     Bind(&end);
+    // #endif
     auto ret = *result;
     env->SubCfgExit();
     return ret;
