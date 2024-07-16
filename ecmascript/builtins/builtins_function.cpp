@@ -117,7 +117,6 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeApply(EcmaRuntimeCallInfo *argv
     JSThread *thread = argv->GetThread();
     BUILTINS_API_TRACE(thread, Function, PrototypeApply);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-
     JSHandle<JSTaggedValue> func = GetThis(argv);
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> arrayObj = GetCallArg(argv, 1);

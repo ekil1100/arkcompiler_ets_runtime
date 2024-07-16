@@ -1857,6 +1857,9 @@ DEF_RUNTIME_STUBS(UpFrame)
             uintptr_t pc = reinterpret_cast<uintptr_t>(method->GetBytecodeArray() + pcOffset);
             return JSTaggedValue(static_cast<uint64_t>(pc)).GetRawData();
         }
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+        EndCallTimerWithStrComment(frameHandler.GetFunction().GetRawData(), false, "ExceptionHandler::UpFrame");
+#endif
         if (!method->IsNativeWithCallField()) {
             auto *debuggerMgr = thread->GetEcmaVM()->GetJsDebuggerManager();
             debuggerMgr->GetNotificationManager()->MethodExitEvent(thread, method);
@@ -3713,6 +3716,8 @@ static const std::map<int32_t, std::string> comments = {
     {18, "LowerFastCall2"},
     {19, "LowerFastSuperCall2"},
     {20, "LowerFastSuperCall3"},
+    {21, "ExceptionHandler"},
+    {22, "ExceptionReturn"},
 };
 
 void RuntimeStubs::StartCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment)

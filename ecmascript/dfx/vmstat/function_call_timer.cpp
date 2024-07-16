@@ -21,6 +21,9 @@
 namespace panda::ecmascript {
 void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
 {
+    if (finished_) {
+        return;
+    }
     size_t id = method->GetMethodId().GetOffset();
     CString name = GetFullName(method);
     FunctionCallStat* stat = nullptr;
@@ -40,6 +43,9 @@ void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
 
 void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
 {
+    if (finished_) {
+        return;
+    }
     size_t id = method->GetMethodId().GetOffset();
     auto name = GetFullName(method);
     PandaRuntimeTimer* callee = &timerStack_.top();
@@ -57,6 +63,17 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
     statStack_.pop();
     timerStack_.pop();
     PrintMethodInfo(method, isAot, "end", tag);
+}
+
+void FunctionCallTimer::FinishFunctionTimer()
+{
+    finished_ = true;
+    while (!timerStack_.empty()) {
+        PandaRuntimeTimer* callee = &timerStack_.top();
+        callee->Stop();
+        statStack_.pop();
+        timerStack_.pop();
+    }
 }
 
 void FunctionCallTimer::PrintStat(FunctionCallStat* stat)

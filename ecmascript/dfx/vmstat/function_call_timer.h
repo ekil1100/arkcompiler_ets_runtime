@@ -107,6 +107,7 @@ public:
     FunctionCallStat* TryGetIntStat(CString name, size_t id, bool isAot = false, std::string tag = "unknown");
     void PrintStatStack();
     void PrintStat(FunctionCallStat* stat);
+    void FinishFunctionTimer();
 
 private:
     std::set<std::string> ignoreList_ {"setTimeout"};
@@ -115,6 +116,7 @@ private:
     CMap<size_t, int> count_ {};
     std::stack<PandaRuntimeTimer> timerStack_ {};
     std::stack<FunctionCallStat*> statStack_ {};
+    bool finished_ = false;
 };
 }
 #endif // ECMASCRIPT_DFX_VMSTAT_FCUNTION_CALL_TIMER_H
