@@ -23,9 +23,6 @@ void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
 {
     size_t id = method->GetMethodId().GetOffset();
     CString name = GetFullName(method);
-    if (ignoreList_.find(name.c_str()) != ignoreList_.end()) {
-        return;
-    }
     FunctionCallStat* stat = nullptr;
     if (isAot) {
         stat = TryGetAotStat(name, id, isAot, tag);
@@ -45,18 +42,15 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
 {
     size_t id = method->GetMethodId().GetOffset();
     auto name = GetFullName(method);
-    if (ignoreList_.find(name.c_str()) != ignoreList_.end()) {
-        return;
-    }
     PandaRuntimeTimer* callee = &timerStack_.top();
-    FunctionCallStat* stat = statStack_.top();
-    if (stat->GetId() != id) {
+    FunctionCallStat* currentStat = statStack_.top();
+    if (currentStat->GetId() != id) {
         PrintStatStack();
         LOG_TRACE(FATAL) << "[FunctionTimer] method not match, end"
                          << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot
                          << ", last start"
-                         << " at " << stat->Tag() << ", method: " << stat->Name() << ":" << stat->GetId()
-                         << ", is aot: " << stat->IsAot();
+                         << " at " << currentStat->GetTag() << ", method: " << currentStat->Name() << ":"
+                         << currentStat->GetId() << ", is aot: " << currentStat->IsAot();
         return;
     }
     callee->Stop();
@@ -67,7 +61,7 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
 
 void FunctionCallTimer::PrintStat(FunctionCallStat* stat)
 {
-    LOG_TRACE(DEBUG) << "[stat:" << statStack_.size() << "] start at " << stat->Tag()
+    LOG_TRACE(DEBUG) << "[stat:" << statStack_.size() << "] start at " << stat->GetTag()
                      << ", name: " << stat->Name() << ", id: " << stat->GetId() << ", is aot: " << stat->IsAot();
 }
 
@@ -179,6 +173,8 @@ FunctionCallStat* FunctionCallTimer::TryGetAotStat(CString name, size_t id, bool
     if (iter == aotCallStat_.end()) {
         FunctionCallStat stat(name, id, isAot, tag);
         aotCallStat_[id] = stat;
+    } else {
+        iter->second.SetTag(tag);
     }
     return &aotCallStat_[id];
 }
@@ -189,6 +185,8 @@ FunctionCallStat* FunctionCallTimer::TryGetIntStat(CString name, size_t id, bool
     if (iter == intCallStat_.end()) {
         FunctionCallStat stat(name, id, isAot, tag);
         intCallStat_[id] = stat;
+    } else {
+        iter->second.SetTag(tag);
     }
     return &intCallStat_[id];
 }

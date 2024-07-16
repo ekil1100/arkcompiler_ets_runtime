@@ -69,9 +69,14 @@ public:
         return id_;
     }
 
-    std::string Tag() const
+    std::string GetTag() const
     {
         return tag_;
+    }
+
+    void SetTag(std::string tag)
+    {
+        tag_ = tag;
     }
 
 private:
@@ -104,12 +109,7 @@ public:
     void PrintStat(FunctionCallStat* stat);
 
 private:
-    std::set<std::string> ignoreList_ {"setTimeout",
-                                       "setInterval",
-                                       "requestAnimationFrame",
-                                       "clearTimeout",
-                                       "clearInterval",
-                                       "cancelAnimationFrame"};
+    std::set<std::string> ignoreList_ {"setTimeout"};
     CMap<size_t, FunctionCallStat> aotCallStat_ {};
     CMap<size_t, FunctionCallStat> intCallStat_ {};
     CMap<size_t, int> count_ {};
