@@ -1956,10 +1956,11 @@ void SlowPathLowering::LowerFastSuperCall(const std::vector<GateRef> &args, Vari
     }
     builder_.Bind(&notAotCall);
     {
-        builder_.StartCallTimerWithCommentId(glue_, gate, {superFunc, builder_.True(), builder_.Int32(16)}, true);
-        result->WriteVariable(LowerCallNGCRuntime(gate, RTSTUB_ID(SuperCallWithArgV),
-            {glue_, actualArgc, superFunc, newTartget, thisObj, elementsPtr}, true));
-        builder_.EndCallTimerWithCommentId(glue_, gate, {superFunc, builder_.True(), builder_.Int32(16)}, true);
+        builder_.StartCallTimerWithCommentId(glue_, gate, {superFunc, builder_.False(), builder_.Int32(16)}, true);
+        result->WriteVariable(LowerCallNGCRuntime(gate,
+                                                  RTSTUB_ID(SuperCallWithArgV),
+                                                  {glue_, actualArgc, superFunc, newTartget, thisObj, elementsPtr},
+                                                  true));
         builder_.Jump(exit);
     }
 }
@@ -3426,12 +3427,11 @@ void SlowPathLowering::LowerNewFastCall(GateRef gate, GateRef glue, GateRef func
     }
     builder_.Bind(&slowPath);
     {
-        builder_.StartCallTimerWithCommentId(glue_, gate, {func, builder_.True(), builder_.Int32(15)}, true);
+        builder_.StartCallTimerWithCommentId(glue_, gate, {func, builder_.False(), builder_.Int32(15)}, true);
         const CallSignature *cs = RuntimeStubCSigns::Get(RTSTUB_ID(JSCallNew));
         GateRef target = builder_.IntPtr(RTSTUB_ID(JSCallNew));
         auto depend = builder_.GetDepend();
         result->WriteVariable(builder_.Call(cs, glue, target, depend, args, gate, "slowNew"));
-        builder_.EndCallTimerWithCommentId(glue_, gate, {func, builder_.True(), builder_.Int32(15)}, true);
         builder_.Jump(exit);
     }
 }
@@ -3529,20 +3529,18 @@ void SlowPathLowering::LowerFastCall(GateRef gate, GateRef glue, GateRef func, G
     builder_.Bind(&slowPath);
     {
         if (isNew) {
-            builder_.StartCallTimerWithCommentId(glue_, gate, {func, builder_.True(), builder_.Int32(17)}, true);
+            builder_.StartCallTimerWithCommentId(glue_, gate, {func, builder_.False(), builder_.Int32(17)}, true);
             const CallSignature *cs = RuntimeStubCSigns::Get(RTSTUB_ID(JSCallNew));
             GateRef target = builder_.IntPtr(RTSTUB_ID(JSCallNew));
             auto depend = builder_.GetDepend();
             result->WriteVariable(builder_.Call(cs, glue, target, depend, args, gate, "slowNew"));
-            builder_.EndCallTimerWithCommentId(glue_, gate, {func, builder_.True(), builder_.Int32(17)}, true);
             builder_.Jump(exit);
         } else {
-            builder_.StartCallTimerWithCommentId(glue_, gate, {func, builder_.True(), builder_.Int32(18)}, true);
+            builder_.StartCallTimerWithCommentId(glue_, gate, {func, builder_.False(), builder_.Int32(18)}, true);
             const CallSignature *cs = RuntimeStubCSigns::Get(RTSTUB_ID(JSCall));
             GateRef target = builder_.IntPtr(RTSTUB_ID(JSCall));
             auto depend = builder_.GetDepend();
             result->WriteVariable(builder_.Call(cs, glue, target, depend, args, gate, "jscall"));
-            builder_.EndCallTimerWithCommentId(glue_, gate, {func, builder_.True(), builder_.Int32(18)}, true);
             builder_.Jump(exit);
         }
     }

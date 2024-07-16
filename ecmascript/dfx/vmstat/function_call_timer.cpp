@@ -23,6 +23,9 @@ void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
 {
     size_t id = method->GetMethodId().GetOffset();
     CString name = GetFullName(method);
+    if (ignoreList_.find(name.c_str()) != ignoreList_.end()) {
+        return;
+    }
     FunctionCallStat* stat = nullptr;
     if (isAot) {
         stat = TryGetAotStat(name, id, isAot, tag);
@@ -42,16 +45,14 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
 {
     size_t id = method->GetMethodId().GetOffset();
     auto name = GetFullName(method);
-    PandaRuntimeTimer* callee = &timerStack_.top();
-    FunctionCallStat* stat = statStack_.top();
-    if (isAot && method->IsDeoptimized() && tag != "DeoptHandler") {
-        LOG_TRACE(INFO) << "[skip] aot end timer because of deopt, end"
-                        << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot;
+    if (ignoreList_.find(name.c_str()) != ignoreList_.end()) {
         return;
     }
+    PandaRuntimeTimer* callee = &timerStack_.top();
+    FunctionCallStat* stat = statStack_.top();
     if (stat->GetId() != id) {
         PrintStatStack();
-        LOG_TRACE(FATAL) << "[error] method not match, end"
+        LOG_TRACE(FATAL) << "[FunctionTimer] method not match, end"
                          << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot
                          << ", last start"
                          << " at " << stat->Tag() << ", method: " << stat->Name() << ":" << stat->GetId()

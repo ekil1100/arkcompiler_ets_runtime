@@ -843,7 +843,7 @@ void RuntimeStubs::DebugPrintInstruction([[maybe_unused]] uintptr_t argGlue, con
     auto thread = JSThread::GlueToJSThread(argGlue);
     std::string data = JsStackInfo::BuildJsStackTrace(thread, true);
     BytecodeInstruction inst(pc);
-    LOG_TRACE(ERROR) << "int: " << inst << data;
+    LOG_TRACE(INFO) << "int: " << inst << data;
 }
 
 void RuntimeStubs::DebugOsrEntry([[maybe_unused]] uintptr_t argGlue, const uint8_t *codeEntry)
@@ -2815,7 +2815,7 @@ DEF_RUNTIME_STUBS(DebugAOTPrint)
 
     std::string data = JsStackInfo::BuildJsStackTrace(thread, true);
     std::string opcode = kungfu::GetEcmaOpcodeStr(static_cast<EcmaOpcode>(ecmaOpcode));
-    LOG_TRACE(ERROR) << "aot " << pathStr << ": " << opcode << data;
+    LOG_TRACE(INFO) << "aot " << pathStr << ": " << opcode << data;
     return JSTaggedValue::Undefined().GetRawData();
 }
 

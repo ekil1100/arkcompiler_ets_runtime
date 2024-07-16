@@ -104,6 +104,12 @@ public:
     void PrintStat(FunctionCallStat* stat);
 
 private:
+    std::set<std::string> ignoreList_ {"setTimeout",
+                                       "setInterval",
+                                       "requestAnimationFrame",
+                                       "clearTimeout",
+                                       "clearInterval",
+                                       "cancelAnimationFrame"};
     CMap<size_t, FunctionCallStat> aotCallStat_ {};
     CMap<size_t, FunctionCallStat> intCallStat_ {};
     CMap<size_t, int> count_ {};
