@@ -101,15 +101,17 @@ namespace panda::ecmascript::kungfu {
 class TypedHCRLowering : public PassVisitor {
 public:
     TypedHCRLowering(Circuit* circuit,
-                     CompilationEnv *env,
+                     CompilationEnv* env,
                      RPOVisitor* visitor,
                      CompilationConfig* cmpCfg,
                      Chunk* chunk,
+                     const MethodLiteral* methodLiteral,
                      bool enableLoweringBuiltin)
         : PassVisitor(circuit, chunk, visitor),
           circuit_(circuit),
           compilationEnv_(env),
-          acc_(circuit),
+          acc_(circuit, methodLiteral),
+          methodLiteral_(methodLiteral),
           builder_(circuit, cmpCfg),
           dependEntry_(circuit->GetDependRoot()),
           enableLoweringBuiltin_(enableLoweringBuiltin)
@@ -271,6 +273,7 @@ private:
     Circuit *circuit_;
     CompilationEnv *compilationEnv_ {nullptr};
     GateAccessor acc_;
+    const MethodLiteral* methodLiteral_ {nullptr};
     CircuitBuilder builder_;
     GateRef dependEntry_;
     bool enableLoweringBuiltin_ {false};

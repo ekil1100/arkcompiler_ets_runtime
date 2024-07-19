@@ -1787,6 +1787,7 @@ GateRef GateAccessor::GetGlueFromArgList() const
 
 GateRef GateAccessor::GetFuncFromArgList() const
 {
+    ASSERT(methodLiteral_ != nullptr);
     std::vector<GateRef> outs;
     GetArgsOuts(outs);
     std::reverse(outs.begin(), outs.end());

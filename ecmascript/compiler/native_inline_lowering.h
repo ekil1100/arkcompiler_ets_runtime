@@ -28,18 +28,25 @@
 namespace panda::ecmascript::kungfu {
 class NativeInlineLowering {
 public:
-    explicit NativeInlineLowering(Circuit *circuit, CompilationConfig* cmpCfg, PassContext *ctx, bool enableLog,
-                                  const std::string& name, Chunk *chunk)
+    explicit NativeInlineLowering(Circuit* circuit,
+                                  CompilationConfig* cmpCfg,
+                                  PassContext* ctx,
+                                  bool enableLog,
+                                  const std::string& name,
+                                  Chunk* chunk,
+                                  const MethodLiteral* methodLiteral)
         : circuit_(circuit),
           builder_(circuit, cmpCfg),
-          acc_(circuit),
+          acc_(circuit, methodLiteral),
           glue_(acc_.GetGlueFromArgList()),
           enableLog_(enableLog),
           methodName_(name),
           nocheck_(ctx->GetCompilationEnv()->GetJSOptions().IsCompilerNoCheck()),
           traceInline_(ctx->GetCompilationEnv()->GetJSOptions().GetTraceInline()),
           compilationEnv_(ctx->GetCompilationEnv()),
-          chunk_(chunk) {}
+          chunk_(chunk)
+    {
+    }
     ~NativeInlineLowering() = default;
     void RunNativeInlineLowering();
 

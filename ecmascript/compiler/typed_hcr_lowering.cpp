@@ -1461,7 +1461,7 @@ GateRef TypedHCRLowering::IntToTaggedIntPtr(GateRef x)
 
 void TypedHCRLowering::LowerTypedCallBuitin(GateRef gate)
 {
-    BuiltinLowering lowering(circuit_);
+    BuiltinLowering lowering(circuit_, methodLiteral_);
     lowering.LowerTypedCallBuitin(gate);
 }
 
@@ -1561,7 +1561,7 @@ void TypedHCRLowering::LowerCallTargetCheck(GateRef gate)
     Environment env(gate, circuit_, &builder_);
     GateRef frameState = GetFrameState(gate);
 
-    BuiltinLowering lowering(circuit_);
+    BuiltinLowering lowering(circuit_, methodLiteral_);
     GateRef funcheck = lowering.LowerCallTargetCheck(&env, gate);
     GateRef check = lowering.CheckPara(gate, funcheck);
     builder_.DeoptCheck(check, frameState, DeoptType::NOTCALLTGT1);
