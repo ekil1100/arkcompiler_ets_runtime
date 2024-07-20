@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "ecmascript/compiler/argument_accessor.h"
-#include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/gate_accessor.h"
+#include "ecmascript/compiler/argument_accessor.h"
+#include "ecmascript/compiler/circuit_builder-inl.h"
 #include "ecmascript/compiler/graph_editor.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/mem/assert_scope.h"
@@ -1190,11 +1190,25 @@ UseIterator GateAccessor::ReplaceHirIfException(const UseIterator &useIt, StateD
     return next;
 }
 
-void GateAccessor::ExceptionReturn(GateRef state, GateRef depend)
+void GateAccessor::ExceptionReturn([[maybe_unused]] GateRef state,
+                                   [[maybe_unused]] GateRef depend,
+                                   [[maybe_unused]] GateRef gate)
 {
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    CircuitBuilder builder(circuit_);
+    Environment env(gate, circuit_, &builder);
+    auto glue = GetGlueFromArgList();
+    auto func = GetFuncFromArgList();
+    int index = RTSTUB_ID(EndCallTimerWithCommentId);
+    const std::vector<GateRef> args = {func, builder.False(), builder.Int32(22)};
+    GateRef result = builder.CallNGCRuntime(glue, gate, index, args, true);
+    auto constant = builder.ExceptionConstant();
+    builder.Return(state, result, constant);
+#else
     CircuitBuilder builder(circuit_);
     auto constant = builder.ExceptionConstant();
     builder.Return(state, depend, constant);
+#endif
 }
 
 void GateAccessor::ReplaceHirWithIfBranch(GateRef hirGate, StateDepend success,
@@ -1202,6 +1216,7 @@ void GateAccessor::ReplaceHirWithIfBranch(GateRef hirGate, StateDepend success,
 {
     auto uses = Uses(hirGate);
     GateRef ifException = Circuit::NullGate();
+    bool exceptionReturn = false;
     for (auto it = uses.begin(); it != uses.end();) {
         if (IsStateIn(it)) {
             const OpCode op = GetOpCode(*it);
@@ -1213,7 +1228,7 @@ void GateAccessor::ReplaceHirWithIfBranch(GateRef hirGate, StateDepend success,
             } else if (GetMetaData(*it)->IsVirtualState()) {
                 it = ReplaceIn(it, success.State());
             } else {
-                ExceptionReturn(exception.State(), exception.Depend());
+                exceptionReturn = true;
                 it = ReplaceIn(it, success.State());
             }
         } else if (IsDependIn(it)) {
@@ -1228,6 +1243,10 @@ void GateAccessor::ReplaceHirWithIfBranch(GateRef hirGate, StateDepend success,
             ASSERT(IsValueIn(it));
             it = ReplaceIn(it, value);
         }
+    }
+
+    if (exceptionReturn) {
+        ExceptionReturn(exception.State(), exception.Depend(), hirGate);
     }
 
     if (ifException != Circuit::NullGate()) {
@@ -1764,6 +1783,19 @@ GateRef GateAccessor::GetGlueFromArgList() const
         curOut = curOut->GetNextOutConst();
     }
     return circuit_->GetGateRef(curOut->GetGateConst());
+}
+
+GateRef GateAccessor::GetFuncFromArgList() const
+{
+    ASSERT(methodLiteral_ != nullptr);
+    std::vector<GateRef> outs;
+    GetArgsOuts(outs);
+    std::reverse(outs.begin(), outs.end());
+    if (methodLiteral_->IsFastCall()) {
+        return outs.at(static_cast<size_t>(FastCallArgIdx::FUNC));
+    } else {
+        return outs.at(static_cast<size_t>(CommonArgIdx::FUNC));
+    }
 }
 
 void GateAccessor::GetArgsOuts(std::vector<GateRef>& outs) const

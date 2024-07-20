@@ -1855,6 +1855,9 @@ DEF_RUNTIME_STUBS(UpFrame)
             uintptr_t pc = reinterpret_cast<uintptr_t>(method->GetBytecodeArray() + pcOffset);
             return JSTaggedValue(static_cast<uint64_t>(pc)).GetRawData();
         }
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+        EndCallTimerWithStrComment(frameHandler.GetFunction().GetRawData(), false, "ExceptionHandler::UpFrame");
+#endif
         if (!method->IsNativeWithCallField()) {
             auto *debuggerMgr = thread->GetEcmaVM()->GetJsDebuggerManager();
             debuggerMgr->GetNotificationManager()->MethodExitEvent(thread, method);
@@ -2809,11 +2812,11 @@ DEF_RUNTIME_STUBS(DebugAOTPrint)
     RUNTIME_STUBS_HEADER(DebugAOTPrint);
     int ecmaOpcode = GetArg(argv, argc, 0).GetInt();
     int path = GetArg(argv, argc, 1).GetInt();
-    std::string pathStr = path == 0 ? "slow path  " : "TYPED path ";
+    std::string pathStr = path == 0 ? "slow path" : "typed path";
 
     std::string data = JsStackInfo::BuildJsStackTrace(thread, true);
     std::string opcode = kungfu::GetEcmaOpcodeStr(static_cast<EcmaOpcode>(ecmaOpcode));
-    LOG_ECMA(INFO) << "AOT " << pathStr << ": " << opcode << "@ " << data;
+    LOG_TRACE(INFO) << "aot " << pathStr << ": " << opcode << data;
     return JSTaggedValue::Undefined().GetRawData();
 }
 
@@ -3549,6 +3552,12 @@ DEF_RUNTIME_STUBS(DeoptHandler)
     deopt.CollectVregs(deoptBundle, shift);
     kungfu::DeoptType type = static_cast<kungfu::DeoptType>(GetArg(argv, argc, 0).GetInt());
     deopt.UpdateAndDumpDeoptInfo(type);
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    FrameHandler frameHandler(thread);
+    auto func = frameHandler.GetFunction();
+    EndCallTimerWithStrComment(func.GetRawData(), true, "DeoptHandler");
+    StartCallTimerWithStrComment(func.GetRawData(), false, "DeoptHandler");
+#endif
     return deopt.ConstructAsmInterpretFrame();
 }
 
@@ -3649,30 +3658,96 @@ DEF_RUNTIME_STUBS(HClassCloneWithAddProto)
     return JSHClass::CloneWithAddProto(thread, jshclass, key, proto).GetTaggedValue().GetRawData();
 }
 
-void RuntimeStubs::StartCallTimer(uintptr_t argGlue, JSTaggedType func, bool isAot)
+void RuntimeStubs::StartCallTimerWithStrComment(JSTaggedType func, bool isAot, std::string comment)
 {
-    auto thread =  JSThread::GlueToJSThread(argGlue);
     JSTaggedValue callTarget(func);
-    Method *method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
+    Method* method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
     if (method->IsNativeWithCallField()) {
         return;
     }
-    size_t methodId = method->GetMethodId().GetOffset();
-    auto callTimer = thread->GetEcmaVM()->GetCallTimer();
-    callTimer->InitialStatAndTimer(method, methodId, isAot);
-    callTimer->StartCount(methodId, isAot);
+    FunctionCallTimer::GetInstance().StartCount(method, isAot, comment);
 }
 
-void RuntimeStubs::EndCallTimer(uintptr_t argGlue, JSTaggedType func)
+void RuntimeStubs::EndCallTimerWithStrComment(JSTaggedType func, bool isAot, std::string comment)
 {
-    auto thread =  JSThread::GlueToJSThread(argGlue);
     JSTaggedValue callTarget(func);
-    Method *method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
+    Method* method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
     if (method->IsNativeWithCallField()) {
         return;
     }
-    auto callTimer = thread->GetEcmaVM()->GetCallTimer();
-    callTimer->StopCount(method);
+    FunctionCallTimer::GetInstance().StopCount(method, isAot, comment);
+}
+
+void RuntimeStubs::StartCallTimerWithComment(JSTaggedType func, bool isAot, uintptr_t comment)
+{
+    const char* str = reinterpret_cast<const char*>(comment);
+    const char* tag = str == nullptr ? "unknown" : str;
+    StartCallTimerWithStrComment(func, isAot, tag);
+}
+
+void RuntimeStubs::EndCallTimerWithComment(JSTaggedType func, bool isAot, uintptr_t comment)
+{
+    const char* str = reinterpret_cast<const char*>(comment);
+    const char* tag = str == nullptr ? "unknown" : str;
+    EndCallTimerWithStrComment(func, isAot, tag);
+}
+
+static const std::map<int32_t, std::string> comments = {
+    {0, "HandleResumegenerator"},
+    {1, "HandleReturn"},
+    {2, "HandleDeprecatedResumegeneratorPrefV8"},
+    {3, "JSCallDispatchForBaseline"},
+    {4, "JSCallDispatch"},
+    {5, "BaselineResumegeneratorStubBuilder::GenerateCircuit"},
+    {6, "BaselineDeprecatedResumegeneratorPrefV8StubBuilder::GenerateCircuit"},
+    {7, "HandleReturnundefined"},
+    {8, "HandleSuspendgeneratorV8"},
+    {9, "HandleDeprecatedSuspendgeneratorPrefV8V8"},
+    {10, "HandleAsyncgeneratorresolveV8V8V8"},
+    {11, "LowerCallTimer"},
+    {12, "BaselineAsyncgeneratorresolveV8V8V8StubBuilder::GenerateCircuit"},
+    {13, "BaselineDeprecatedSuspendgeneratorPrefV8V8StubBuilder::GenerateCircuit"},
+    {14, "BaselineSuspendgeneratorV8StubBuilder::GenerateCircuit"},
+    {15, "LowerNewFastCall"},
+    {16, "LowerFastSuperCall"},
+    {17, "LowerFastCall1"},
+    {18, "LowerFastCall2"},
+    {19, "LowerFastSuperCall2"},
+    {20, "LowerFastSuperCall3"},
+    {21, "ExceptionHandler"},
+    {22, "ExceptionReturn"},
+};
+
+void RuntimeStubs::StartCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment)
+{
+    std::string tag;
+    if (comments.find(comment) == comments.end()) {
+        tag = std::to_string(comment);
+    } else {
+        tag = comments.at(comment);
+    }
+    StartCallTimerWithStrComment(func, isAot, tag);
+}
+
+void RuntimeStubs::EndCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment)
+{
+    std::string tag;
+    if (comments.find(comment) == comments.end()) {
+        tag = std::to_string(comment);
+    } else {
+        tag = comments.at(comment);
+    }
+    EndCallTimerWithStrComment(func, isAot, tag);
+}
+
+void RuntimeStubs::StartCallTimer(JSTaggedType func, bool isAot)
+{
+    StartCallTimerWithStrComment(func, isAot);
+}
+
+void RuntimeStubs::EndCallTimer(JSTaggedType func, bool isAot)
+{
+    EndCallTimerWithStrComment(func, isAot);
 }
 
 int32_t RuntimeStubs::StringGetStart(bool isUtf8, EcmaString *srcString, int32_t length, int32_t startIndex)

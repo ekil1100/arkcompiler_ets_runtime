@@ -351,8 +351,9 @@ bool EcmaVM::Initialize()
     if (options_.EnableEdenGC()) {
         heap_->EnableEdenGC();
     }
-
-    callTimer_ = new FunctionCallTimer();
+#ifdef ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    FunctionCallTimer::GetInstance().RegisteFunctionTimerSignal();
+#endif
     strategy_ = new ThroughputJSObjectResizingStrategy();
     if (IsEnableFastJit() || IsEnableBaselineJit()) {
         ohos::JitTools::GetInstance().EnableJit(this);
@@ -409,7 +410,7 @@ EcmaVM::~EcmaVM()
     }
 
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    DumpCallTimeInfo();
+    FunctionCallTimer::GetInstance().PrintAllStats();
 #endif
 
 #if defined(ECMASCRIPT_SUPPORT_TRACING)
@@ -484,11 +485,6 @@ EcmaVM::~EcmaVM()
         snapshotEnv_->ClearEnvMap();
         delete snapshotEnv_;
         snapshotEnv_ = nullptr;
-    }
-
-    if (callTimer_ != nullptr) {
-        delete callTimer_;
-        callTimer_ = nullptr;
     }
 
     if (strategy_ != nullptr) {
@@ -904,13 +900,6 @@ void EcmaVM::TriggerConcurrentCallback(JSTaggedValue result, JSTaggedValue hint)
     thread_->SetTaskInfo(reinterpret_cast<uintptr_t>(nullptr));
     concurrentCallback_(JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread_, result)), success,
                         taskInfo, concurrentData_);
-}
-
-void EcmaVM::DumpCallTimeInfo()
-{
-    if (callTimer_ != nullptr) {
-        callTimer_->PrintAllStats();
-    }
 }
 
 void EcmaVM::WorkersetInfo(EcmaVM *workerVm)

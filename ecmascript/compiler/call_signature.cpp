@@ -2606,15 +2606,78 @@ DEF_CALL_SIGNATURE(SetDateValues)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
+DEF_CALL_SIGNATURE(StartCallTimerWithCommentId)
+{
+    const int numberOfArgs = 3;
+    CallSignature index(
+        "StartCallTimerWithCommentId", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::INT32(), // comment id
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
+DEF_CALL_SIGNATURE(EndCallTimerWithCommentId)
+{
+    const int numberOfArgs = 3;
+    CallSignature index(
+        "EndCallTimerWithCommentId", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::INT32(), // comment id
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
+DEF_CALL_SIGNATURE(StartCallTimerWithComment)
+{
+    const int numberOfArgs = 3;
+    CallSignature index(
+        "StartCallTimerWithComment", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::NATIVE_POINTER(), // comment create by CircuitBuilder::StringPtr()
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
+DEF_CALL_SIGNATURE(EndCallTimerWithComment)
+{
+    const int numberOfArgs = 3;
+    CallSignature index(
+        "EndCallTimerWithComment", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::NATIVE_POINTER(), // comment create by CircuitBuilder::StringPtr()
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
 DEF_CALL_SIGNATURE(StartCallTimer)
 {
-    CallSignature index("StartCallTimer", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    const int numberOfArgs = 2;
+    CallSignature index("StartCallTimer", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = index;
-    // 3 : 3 input parameters
-    std::array<VariableType, 3> params = {
-        VariableType::NATIVE_POINTER(),
-        VariableType::JS_ANY(),
-        VariableType::BOOL()
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
     };
     callSign->SetParameters(params.data());
     callSign->SetGCLeafFunction(true);
@@ -2623,12 +2686,12 @@ DEF_CALL_SIGNATURE(StartCallTimer)
 
 DEF_CALL_SIGNATURE(EndCallTimer)
 {
-    CallSignature index("EndCallTimer", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    const int numberOfArgs = 2;
+    CallSignature index("EndCallTimer", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = index;
-    // 2 : 2 input parameters
-    std::array<VariableType, 2> params = {
-        VariableType::NATIVE_POINTER(),
-        VariableType::JS_ANY()
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
     };
     callSign->SetParameters(params.data());
     callSign->SetGCLeafFunction(true);

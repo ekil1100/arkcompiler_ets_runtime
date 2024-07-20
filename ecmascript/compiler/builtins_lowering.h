@@ -24,7 +24,10 @@
 namespace panda::ecmascript::kungfu {
 class BuiltinLowering {
 public:
-    explicit BuiltinLowering(Circuit *circuit): circuit_(circuit), builder_(circuit), acc_(circuit) {}
+    explicit BuiltinLowering(Circuit* circuit, const MethodLiteral* methodLiteral)
+        : circuit_(circuit), builder_(circuit), acc_(circuit, methodLiteral)
+    {
+    }
     ~BuiltinLowering() = default;
     void LowerTypedCallBuitin(GateRef gate);
     GateRef LowerCallTargetCheck(Environment *env, GateRef gate);

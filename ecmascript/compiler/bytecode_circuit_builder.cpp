@@ -719,6 +719,13 @@ GateRef BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb)
     ASSERT(bb.succs.empty());
     auto &iterator = bb.GetBytecodeIterator();
     const BytecodeInfo& bytecodeInfo = iterator.GetBytecodeInfo();
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    GateRef timerState = frameStateBuilder_.GetCurrentState();
+    GateRef timerDepend = frameStateBuilder_.GetCurrentDepend();
+    GateRef frameArgs = argAcc_.GetFrameArgs();
+    auto timer = circuit_->NewGate(circuit_->EndCallTimer(), {timerState, timerDepend, frameArgs});
+    frameStateBuilder_.UpdateStateDepend(timerState, timer);
+#endif
     GateRef state = frameStateBuilder_.GetCurrentState();
     GateRef depend = frameStateBuilder_.GetCurrentDepend();
     GateRef gate = Circuit::NullGate();
@@ -795,6 +802,13 @@ void BytecodeCircuitBuilder::BuildSubCircuit()
                 bb.dependCache = stackCheck;
                 frameStateBuilder_.UpdateStateDepend(stackCheck, stackCheck);
             }
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+            GateRef state = frameStateBuilder_.GetCurrentState();
+            GateRef depend = frameStateBuilder_.GetCurrentDepend();
+            GateRef frameArgs = argAcc_.GetFrameArgs();
+            auto timer = circuit_->NewGate(circuit_->StartCallTimer(), {state, depend, frameArgs});
+            frameStateBuilder_.UpdateStateDepend(state, timer);
+#endif
             auto &bbNext = RegionAt(bb.id + 1);
             frameStateBuilder_.MergeIntoSuccessor(bb, bbNext);
             bbNext.expandedPreds.push_back({bb.id, bb.end, false});

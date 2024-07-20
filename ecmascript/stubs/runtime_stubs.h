@@ -209,6 +209,10 @@ using FastCallAotEntryType = JSTaggedValue (*)(uintptr_t glue, uint32_t argc, co
     V(StringToNumber)                          \
     V(StringGetStart)                          \
     V(StringGetEnd)                            \
+    V(StartCallTimerWithCommentId)             \
+    V(EndCallTimerWithCommentId)               \
+    V(StartCallTimer)                          \
+    V(EndCallTimer)                            \
     V(ArrayTrim)                               \
     V(CopyTypedArrayBuffer)
 
@@ -607,8 +611,14 @@ public:
     static void ArrayTrim(uintptr_t argGlue, TaggedArray *array, int64_t newLength);
     static double TimeClip(double time);
     static double SetDateValues(double year, double month, double day);
-    static void StartCallTimer(uintptr_t argGlue, JSTaggedType func, bool isAot);
-    static void EndCallTimer(uintptr_t argGlue, JSTaggedType func);
+    static void StartCallTimerWithStrComment(JSTaggedType func, bool isAot, std::string comment = "unknown");
+    static void EndCallTimerWithStrComment(JSTaggedType func, bool isAot, std::string comment = "unknown");
+    static void StartCallTimerWithComment(JSTaggedType func, bool isAot, uintptr_t comment);
+    static void EndCallTimerWithComment(JSTaggedType func, bool isAot, uintptr_t comment);
+    static void StartCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment);
+    static void EndCallTimerWithCommentId(JSTaggedType func, bool isAot, int32_t comment);
+    static void StartCallTimer(JSTaggedType func, bool isAot);
+    static void EndCallTimer(JSTaggedType func, bool isAot);
     static JSTaggedValue RuntimeArraySort(JSThread *thread, JSHandle<JSTaggedValue> thisHandle);
 
     static JSTaggedValue CallBoundFunction(EcmaRuntimeCallInfo *info);

@@ -520,9 +520,6 @@ JSTaggedValue JSFunction::InvokeOptimizedEntrypoint(JSThread *thread, JSHandle<J
     const JSTaggedType *prevFp = thread->GetLastLeaveFrame();
     JSTaggedValue res;
     std::vector<JSTaggedType> args;
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::StartCallTimer(thread->GetGlueAddr(), mainFunc.GetTaggedType(), true);
-#endif
     if (mainFunc->IsCompiledFastCall()) {
         // do not modify this log to INFO, this will call many times
         LOG_ECMA(DEBUG) << "start to execute aot entry: " << entryPoint;
@@ -534,9 +531,6 @@ JSTaggedValue JSFunction::InvokeOptimizedEntrypoint(JSThread *thread, JSHandle<J
         LOG_ECMA(DEBUG) << "start to execute aot entry: " << entryPoint;
         res = thread->GetCurrentEcmaContext()->ExecuteAot(actualNumArgs, args.data(), prevFp, false);
     }
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::EndCallTimer(thread->GetGlueAddr(), mainFunc.GetTaggedType());
-#endif
     if (thread->HasPendingException()) {
         return thread->GetException();
     }
@@ -582,10 +576,7 @@ JSTaggedValue JSFunction::InvokeOptimizedEntrypoint(JSThread *thread, JSHandle<J
     JSTaggedValue resultValue;
     size_t numArgs = method->GetNumArgsWithCallField();
     bool needPushArgv = numArgs != info->GetArgsNumber();
-    const JSTaggedType *prevFp = thread->GetLastLeaveFrame();
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::StartCallTimer(thread->GetGlueAddr(), func.GetTaggedType(), true);
-#endif
+    const JSTaggedType* prevFp = thread->GetLastLeaveFrame();
     if (func->IsCompiledFastCall()) {
         if (needPushArgv) {
             info = EcmaInterpreter::ReBuildRuntimeCallInfo(thread, info, numArgs);
@@ -598,9 +589,6 @@ JSTaggedValue JSFunction::InvokeOptimizedEntrypoint(JSThread *thread, JSHandle<J
         resultValue = thread->GetCurrentEcmaContext()->ExecuteAot(info->GetArgsNumber(),
             info->GetArgs(), prevFp, needPushArgv);
     }
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::EndCallTimer(thread->GetGlueAddr(), func.GetTaggedType());
-#endif
     return resultValue;
 }
 

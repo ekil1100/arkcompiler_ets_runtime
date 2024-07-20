@@ -7834,7 +7834,15 @@ void StubBuilder::JSCallDispatchForBaseline(GateRef glue, GateRef func, GateRef 
     GateRef bitfield = 0;
     GateRef hclass = 0;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), { glue, func, False()});
+    Label intCall(env);
+    Label callStart(env);
+    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, False(), Int32(3)});
+        Jump(&callStart);
+    }
+    Bind(&callStart);
 #endif
     if (checkIsCallable) {
         BRANCH(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);
@@ -8589,7 +8597,15 @@ GateRef StubBuilder::JSCallDispatch(GateRef glue, GateRef func, GateRef actualNu
     GateRef bitfield = 0;
     GateRef hclass = 0;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue, RTSTUB_ID(StartCallTimer), { glue, func, False()});
+    Label intCall(env);
+    Label callStart(env);
+    BRANCH(JudgeAotAndFastCall(func, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue, RTSTUB_ID(StartCallTimerWithCommentId), {func, False(), Int32(4)});
+        Jump(&callStart);
+    }
+    Bind(&callStart);
 #endif
     if (checkIsCallable) {
         BRANCH(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);

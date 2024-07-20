@@ -265,7 +265,7 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
         return JSTaggedValue(res);
     }
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::StartCallTimer(thread->GetGlueAddr(), info->GetFunctionValue().GetRawData(), false);
+    RuntimeStubs::StartCallTimerWithStrComment(info->GetFunctionValue().GetRawData(), false, "Execute");
 #endif
     if (thread->IsDebugMode() && !method->IsNativeWithCallField()) {
         JSHandle<JSFunction> func(thread, info->GetFunctionValue());

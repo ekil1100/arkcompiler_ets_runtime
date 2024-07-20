@@ -52,7 +52,10 @@ class EcmaVM;
 
 class FunctionCallStat : public PandaRuntimeCallerStat {
 public:
-    explicit FunctionCallStat(const CString &name, bool isAot) : PandaRuntimeCallerStat(name), isAot_(isAot) {}
+    explicit FunctionCallStat(const CString& name, const size_t id, bool isAot, std::string tag)
+        : PandaRuntimeCallerStat(name), isAot_(isAot), id_(id), tag_(tag)
+    {
+    }
     FunctionCallStat() = default;
     ~FunctionCallStat() = default;
 
@@ -60,26 +63,60 @@ public:
     {
         return isAot_;
     }
+
+    size_t GetId() const
+    {
+        return id_;
+    }
+
+    std::string GetTag() const
+    {
+        return tag_;
+    }
+
+    void SetTag(std::string tag)
+    {
+        tag_ = tag;
+    }
+
 private:
     bool isAot_ {false};
+    size_t id_ {0};
+    std::string tag_;
 };
 
 class FunctionCallTimer {
 public:
+    static constexpr int SIGNO = 39;
+    static FunctionCallTimer& GetInstance()
+    {
+        static FunctionCallTimer instance;
+        return instance;
+    }
     FunctionCallTimer() = default;
     ~FunctionCallTimer() = default;
-    void StartCount(size_t id, bool isAot);
-    void StopCount(Method *method);
+    void StartCount(Method* method, bool isAot, std::string tag = "unknown");
+    void StopCount(Method* method, bool isAot, std::string tag = "unknown");
     void PrintAllStats();
-    CString GetFullName(Method *method);
-    void InitialStatAndTimer(Method *method, size_t methodId, bool isAot);
+    CString GetFullName(Method* method);
     void ResetStat();
+    void PrintMethodInfo(Method* method, bool isAot, std::string state, std::string tag);
+    void RegisteFunctionTimerSignal();
+    static void FunctionTimerSignalHandler(int signo);
+    FunctionCallStat* TryGetAotStat(CString name, size_t id, bool isAot = true, std::string tag = "unknown");
+    FunctionCallStat* TryGetIntStat(CString name, size_t id, bool isAot = false, std::string tag = "unknown");
+    void PrintStatStack();
+    void PrintStat(FunctionCallStat* stat);
+    void FinishFunctionTimer();
 
 private:
-    PandaRuntimeTimer *currentTimer_ = nullptr;
+    std::set<std::string> ignoreList_ {"setTimeout"};
     CMap<size_t, FunctionCallStat> aotCallStat_ {};
     CMap<size_t, FunctionCallStat> intCallStat_ {};
-    CMap<size_t, PandaRuntimeTimer> callTimer_ {};
+    CMap<size_t, int> count_ {};
+    std::stack<PandaRuntimeTimer> timerStack_ {};
+    std::stack<FunctionCallStat*> statStack_ {};
+    bool finished_ = false;
 };
 }
 #endif // ECMASCRIPT_DFX_VMSTAT_FCUNTION_CALL_TIMER_H
