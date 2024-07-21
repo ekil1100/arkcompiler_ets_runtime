@@ -369,6 +369,11 @@ public:
     {
     }
 
+    explicit GateAccessor(Circuit* circuit, const MethodLiteral* methodLiteral)
+        : circuit_(circuit), methodLiteral_(methodLiteral)
+    {
+    }
+
     Circuit *GetCircuit() const
     {
         return circuit_;
@@ -545,6 +550,7 @@ public:
     uint32_t GetFirstValue(GateRef gate) const;
     uint32_t GetSecondValue(GateRef gate) const;
     GateRef GetGlueFromArgList() const;
+    GateRef GetFuncFromArgList() const;
     void GetArgsOuts(std::vector<GateRef>& outs) const;
     void GetReturnOuts(std::vector<GateRef>& outs) const;
     bool IsFixed(GateRef g) const;
@@ -623,7 +629,7 @@ private:
     const GateMetaData *GetMetaData(GateRef gate) const;
     UseIterator ReplaceHirIfSuccess(const UseIterator &useIt, GateRef state);
     UseIterator ReplaceHirIfException(const UseIterator &useIt, StateDepend replacement);
-    void ExceptionReturn(GateRef state, GateRef depend);
+    void ExceptionReturn(GateRef state, GateRef depend, GateRef gate);
 
     GateRef GetRoot(OpCode opcode) const;
     ConstUseIterator ConstUseBegin(GateRef gate) const
@@ -684,6 +690,7 @@ private:
     void GetInStates(GateRef gate, std::vector<GateRef>& ins) const;
 
     Circuit *circuit_;
+    const MethodLiteral* methodLiteral_ {nullptr};
 
     friend class Circuit;
     friend class CircuitBuilder;

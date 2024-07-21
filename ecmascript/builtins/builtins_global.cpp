@@ -22,17 +22,18 @@
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/base/string_helper.h"
+#include "ecmascript/containers/containers_errors.h"
+#include "ecmascript/dfx/vmstat/function_call_timer.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_function.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/module/js_module_deregister.h"
+#include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/module/module_path_helper.h"
 #include "ecmascript/stubs/runtime_stubs.h"
 #include "ecmascript/tagged_array-inl.h"
-#include "ecmascript/containers/containers_errors.h"
-#include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/module/js_module_manager.h"
 
 namespace panda::ecmascript::builtins {
 using NumberHelper = base::NumberHelper;
@@ -837,7 +838,8 @@ JSTaggedValue BuiltinsGlobal::PrintFunctionCallStat(EcmaRuntimeCallInfo *msg)
     BUILTINS_API_TRACE(thread, Global, PrintFunctionCallStat);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     // start vm runtime stat statistic
-    thread->GetEcmaVM()->DumpCallTimeInfo();
+    auto timer = thread->GetEcmaVM()->GetFunctionCallTimer();
+    timer->PrintAllStats();
     return JSTaggedValue::Undefined();
 }
 #endif

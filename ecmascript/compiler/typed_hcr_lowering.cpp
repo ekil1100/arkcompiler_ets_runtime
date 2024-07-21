@@ -797,6 +797,7 @@ void TypedHCRLowering::LowerCallPrivateGetter(GateRef gate, GateRef glue)
     GateRef accessor = acc_.GetValueIn(gate, 1);
 
     DEFVALUE(result, (&builder_), VariableType::JS_ANY(), builder_.UndefineConstant());
+    builder_.StartCallTimerWithCommentId(glue, gate, {accessor, builder_.False(), builder_.Int32(50)}, true);
     result = CallAccessor(glue, gate, accessor, receiver, AccessorMode::GETTER);
     ReplaceHirWithPendingException(gate, glue, builder_.GetState(), builder_.GetDepend(), *result);
 }
@@ -809,6 +810,7 @@ void TypedHCRLowering::LowerCallPrivateSetter(GateRef gate, GateRef glue)
     GateRef accessor = acc_.GetValueIn(gate, 1);
     GateRef value = acc_.GetValueIn(gate, 2);
 
+    builder_.StartCallTimerWithCommentId(glue, gate, {accessor, builder_.False(), builder_.Int32(51)}, true);
     CallAccessor(glue, gate, accessor, receiver, AccessorMode::SETTER, value);
     ReplaceHirWithPendingException(gate, glue, builder_.GetState(), builder_.GetDepend(), Circuit::NullGate());
 }
@@ -843,6 +845,8 @@ void TypedHCRLowering::LowerCallGetter(GateRef gate, GateRef glue)
             BRANCH_CIR(builder_.IsSpecial(getter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callGetter);
             builder_.Bind(&callGetter);
             {
+                builder_.StartCallTimerWithCommentId(
+                    glue, gate, {getter, builder_.False(), builder_.Int32(52)}, true);
                 result = CallAccessor(glue, gate, getter, receiver, AccessorMode::GETTER);
                 builder_.Jump(&exit);
             }
@@ -933,6 +937,8 @@ void TypedHCRLowering::LowerCallSetter(GateRef gate, GateRef glue)
             BRANCH_CIR(builder_.IsSpecial(setter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callSetter);
             builder_.Bind(&callSetter);
             {
+                builder_.StartCallTimerWithCommentId(
+                    glue, gate, {setter, builder_.False(), builder_.Int32(53)}, true);
                 CallAccessor(glue, gate, setter, receiver, AccessorMode::SETTER, value);
                 builder_.Jump(&exit);
             }
@@ -1456,7 +1462,7 @@ GateRef TypedHCRLowering::IntToTaggedIntPtr(GateRef x)
 
 void TypedHCRLowering::LowerTypedCallBuitin(GateRef gate)
 {
-    BuiltinLowering lowering(circuit_);
+    BuiltinLowering lowering(circuit_, methodLiteral_);
     lowering.LowerTypedCallBuitin(gate);
 }
 
@@ -1556,7 +1562,7 @@ void TypedHCRLowering::LowerCallTargetCheck(GateRef gate)
     Environment env(gate, circuit_, &builder_);
     GateRef frameState = GetFrameState(gate);
 
-    BuiltinLowering lowering(circuit_);
+    BuiltinLowering lowering(circuit_, methodLiteral_);
     GateRef funcheck = lowering.LowerCallTargetCheck(&env, gate);
     GateRef check = lowering.CheckPara(gate, funcheck);
     builder_.DeoptCheck(check, frameState, DeoptType::NOTCALLTGT1);
@@ -2966,6 +2972,8 @@ void TypedHCRLowering::LowerMonoCallGetterOnProto(GateRef gate, GateRef glue)
             BRANCH_CIR(builder_.IsSpecial(getter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callGetter);
             builder_.Bind(&callGetter);
             {
+                builder_.StartCallTimerWithCommentId(
+                    glue, gate, {getter, builder_.False(), builder_.Int32(54)}, true);
                 result = CallAccessor(glue, gate, getter, receiver, AccessorMode::GETTER);
                 builder_.Jump(&exit);
             }
@@ -3057,6 +3065,8 @@ void TypedHCRLowering::LowerMonoStorePropertyLookUpProto(GateRef gate, GateRef g
                 BRANCH_CIR(builder_.IsSpecial(setter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callSetter);
                 builder_.Bind(&callSetter);
                 {
+                    builder_.StartCallTimerWithCommentId(
+                        glue, gate, {setter, builder_.False(), builder_.Int32(55)}, true);
                     CallAccessor(glue, gate, setter, receiver, AccessorMode::SETTER, value);
                     builder_.Jump(&exit);
                 }
@@ -3128,6 +3138,8 @@ void TypedHCRLowering::LowerMonoStoreProperty(GateRef gate, GateRef glue)
                         BRANCH_CIR(builder_.IsSpecial(setter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callSetter);
                         builder_.Bind(&callSetter);
                         {
+                            builder_.StartCallTimerWithCommentId(
+                                glue, gate, {setter, builder_.False(), builder_.Int32(56)}, true);
                             CallAccessor(glue, gate, setter, receiver, AccessorMode::SETTER, value);
                             builder_.Jump(&exit);
                         }
@@ -3168,6 +3180,8 @@ void TypedHCRLowering::LowerMonoStoreProperty(GateRef gate, GateRef glue)
                     BRANCH_CIR(builder_.IsSpecial(setter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callSetter);
                     builder_.Bind(&callSetter);
                     {
+                        builder_.StartCallTimerWithCommentId(
+                            glue, gate, {setter, builder_.False(), builder_.Int32(57)}, true);
                         CallAccessor(glue, gate, setter, receiver, AccessorMode::SETTER, value);
                         builder_.Jump(&exit);
                     }

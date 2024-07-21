@@ -366,8 +366,12 @@ public:
         TimeScope timescope("NTypeBytecodeLoweringPass", data->GetMethodName(),
             data->GetMethodOffset(), data->GetLog());
         bool enableLog = data->GetLog()->EnableMethodCIRLog();
-        NTypeBytecodeLowering lowering(data->GetCircuit(), data->GetPassContext(), enableLog, data->GetMethodName(),
-                                       data->GetRecordName());
+        NTypeBytecodeLowering lowering(data->GetCircuit(),
+                                       data->GetPassContext(),
+                                       enableLog,
+                                       data->GetMethodName(),
+                                       data->GetRecordName(),
+                                       data->GetMethodLiteral());
         lowering.RunNTypeBytecodeLowering();
         Chunk chunk(data->GetNativeAreaAllocator());
         CombinedPassVisitor visitor(data->GetCircuit(), enableLog, data->GetMethodName(), &chunk);
@@ -413,11 +417,12 @@ public:
             Chunk chunk(data->GetNativeAreaAllocator());
             CombinedPassVisitor visitor(data->GetCircuit(), enableLog, data->GetMethodName(), &chunk);
             TypedHCRLowering lowering(data->GetCircuit(),
-                                    data->GetPassContext()->GetCompilationEnv(),
-                                    &visitor,
-                                    data->GetCompilerConfig(),
-                                    &chunk,
-                                    passOptions->EnableLoweringBuiltin());
+                                      data->GetPassContext()->GetCompilationEnv(),
+                                      &visitor,
+                                      data->GetCompilerConfig(),
+                                      &chunk,
+                                      data->GetMethodLiteral(),
+                                      passOptions->EnableLoweringBuiltin());
             visitor.AddPass(&lowering);
             visitor.VisitGraph();
             visitor.PrintLog("TypedHCRLowering");
@@ -476,8 +481,12 @@ public:
         bool enableLog = data->GetLog()->EnableMethodCIRLog();
         Chunk chunk(data->GetNativeAreaAllocator());
         CombinedPassVisitor visitor(data->GetCircuit(), enableLog, data->GetMethodName(), &chunk);
-        MCRLowering lowering(data->GetPassContext()->GetCompilationEnv(), data->GetCircuit(), &visitor,
-                             data->GetCompilerConfig(), &chunk);
+        MCRLowering lowering(data->GetPassContext()->GetCompilationEnv(),
+                             data->GetCircuit(),
+                             &visitor,
+                             data->GetCompilerConfig(),
+                             &chunk,
+                             data->GetMethodLiteral());
         visitor.AddPass(&lowering);
         visitor.VisitGraph();
         visitor.PrintLog("MCRLowering");
@@ -495,9 +504,15 @@ public:
         }
         TimeScope timescope("TSInlineLoweringPass", data->GetMethodName(), data->GetMethodOffset(), data->GetLog());
         bool enableLog = data->GetLog()->EnableMethodCIRLog();
-        TSInlineLowering inlining(data->GetCircuit(), data->GetPassContext(), enableLog, data->GetMethodName(),
-                                  data->GetNativeAreaAllocator(), passOptions, data->GetMethodOffset(),
-                                  data->GetCallMethodFlagMap());
+        TSInlineLowering inlining(data->GetCircuit(),
+                                  data->GetPassContext(),
+                                  enableLog,
+                                  data->GetMethodName(),
+                                  data->GetNativeAreaAllocator(),
+                                  passOptions,
+                                  data->GetMethodOffset(),
+                                  data->GetCallMethodFlagMap(),
+                                  data->GetMethodLiteral());
         inlining.RunTSInlineLowering();
         Chunk chunk(data->GetNativeAreaAllocator());
         if (passOptions->EnableLexenvSpecialization()) {
@@ -520,8 +535,13 @@ public:
         }
 
         if (passOptions->EnableInlineNative()) {
-            NativeInlineLowering nativeInline(data->GetCircuit(), data->GetCompilerConfig(), data->GetPassContext(),
-                                              enableLog, data->GetMethodName(), &chunk);
+            NativeInlineLowering nativeInline(data->GetCircuit(),
+                                              data->GetCompilerConfig(),
+                                              data->GetPassContext(),
+                                              enableLog,
+                                              data->GetMethodName(),
+                                              &chunk,
+                                              data->GetMethodLiteral());
             nativeInline.RunNativeInlineLowering();
         }
         return true;
@@ -758,8 +778,14 @@ public:
                             data->GetMethodOffset(), data->GetLog());
         Chunk chunk(data->GetNativeAreaAllocator());
         bool enableLog = data->GetLog()->EnableMethodCIRLog();
-        StateSplitLinearizer(data->GetPassContext()->GetCompilationEnv(), data->GetCircuit(), nullptr,
-                             data->GetCompilerConfig(), enableLog, data->GetMethodName(), &chunk)
+        StateSplitLinearizer(data->GetPassContext()->GetCompilationEnv(),
+                             data->GetCircuit(),
+                             nullptr,
+                             data->GetCompilerConfig(),
+                             enableLog,
+                             data->GetMethodName(),
+                             &chunk,
+                             data->GetMethodLiteral())
             .Run();
         return true;
     }

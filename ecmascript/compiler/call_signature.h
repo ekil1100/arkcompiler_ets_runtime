@@ -532,6 +532,10 @@ private:
     V(TimeClip)                                 \
     V(SetDateValues)                            \
     V(CallReturnWithArgv)                       \
+    V(StartCallTimerWithCommentId)              \
+    V(EndCallTimerWithCommentId)                \
+    V(StartCallTimerWithComment)                \
+    V(EndCallTimerWithComment)                  \
     V(StartCallTimer)                           \
     V(EndCallTimer)                             \
     V(GetSingleCharCodeByIndex)                 \

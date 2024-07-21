@@ -630,13 +630,6 @@ public:
         }
     }
 
-    void DumpCallTimeInfo();
-
-    FunctionCallTimer *GetCallTimer() const
-    {
-        return callTimer_;
-    }
-
     EcmaStringTable *GetEcmaStringTable() const
     {
         ASSERT(stringTable_ != nullptr);
@@ -867,6 +860,18 @@ public:
         aotSnapShotStatsMap_.clear();
     }
 
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    std::shared_ptr<FunctionCallTimer> GetFunctionCallTimer() const
+    {
+        return functionCallTimer_;
+    }
+
+    void SetFunctionCallTimer(std::shared_ptr<FunctionCallTimer> functionCallTimer)
+    {
+        functionCallTimer_ = functionCallTimer;
+    }
+#endif
+
 protected:
 
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo) const;
@@ -955,7 +960,6 @@ private:
 #if defined(ECMASCRIPT_SUPPORT_TRACING)
     Tracing *tracing_ {nullptr};
 #endif
-    FunctionCallTimer *callTimer_ {nullptr};
     JSObjectResizingStrategy *strategy_ {nullptr};
 
     // For Native MethodLiteral
@@ -970,6 +974,10 @@ private:
 
     //AOT File Manager
     AOTFileManager *aotFileManager_ {nullptr};
+
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    std::shared_ptr<FunctionCallTimer> functionCallTimer_ {nullptr};
+#endif
 
     // c++ call js
     size_t callDepth_ {0};

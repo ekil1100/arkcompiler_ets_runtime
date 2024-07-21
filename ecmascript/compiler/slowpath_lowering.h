@@ -109,13 +109,21 @@ namespace panda::ecmascript::kungfu {
 
 class SlowPathLowering {
 public:
-    SlowPathLowering(Circuit *circuit, CompilationConfig *cmpCfg,
-                     PassContext *ctx, const MethodLiteral *methodLiteral,
-                     bool enableLog, const std::string& name)
-        : compilationEnv_(ctx->GetCompilationEnv()), methodLiteral_(methodLiteral),
-          circuit_(circuit), acc_(circuit),
-          argAcc_(circuit), builder_(circuit, cmpCfg),
-          enableLog_(enableLog), methodName_(name), glue_(acc_.GetGlueFromArgList())
+    SlowPathLowering(Circuit* circuit,
+                     CompilationConfig* cmpCfg,
+                     PassContext* ctx,
+                     const MethodLiteral* methodLiteral,
+                     bool enableLog,
+                     const std::string& name)
+        : compilationEnv_(ctx->GetCompilationEnv()),
+          methodLiteral_(methodLiteral),
+          circuit_(circuit),
+          acc_(circuit, methodLiteral),
+          argAcc_(circuit),
+          builder_(circuit, cmpCfg),
+          enableLog_(enableLog),
+          methodName_(name),
+          glue_(acc_.GetGlueFromArgList())
     {
         traceBc_ = cmpCfg->IsTraceBC();
         profiling_ = cmpCfg->IsProfiling();
@@ -316,6 +324,8 @@ private:
     void LowerTypedCall(GateRef gate);
     void LowerTypedFastCall(GateRef gate);
     void LowerCheckSafePointAndStackOver(GateRef gate);
+    void LowerStartCallTimer(GateRef gate);
+    void LowerEndCallTimer(GateRef gate);
     void LowerLdPrivateProperty(GateRef gate);
     void LowerStPrivateProperty(GateRef gate);
     void LowerTestIn(GateRef gate);

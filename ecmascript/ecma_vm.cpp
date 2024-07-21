@@ -188,6 +188,11 @@ void EcmaVM::PostFork()
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     GetJSOptions().SetArkProperties(arkProperties);
 #endif
+#ifdef ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    if (functionCallTimer_ == nullptr) {
+        SetFunctionCallTimer(FunctionCallTimer::Create(bundleName));
+    }
+#endif
 }
 
 EcmaVM::EcmaVM(JSRuntimeOptions options, EcmaParamConfiguration config)
@@ -308,12 +313,15 @@ bool EcmaVM::Initialize()
     if (options_.EnableEdenGC()) {
         heap_->EnableEdenGC();
     }
-
-    callTimer_ = new FunctionCallTimer();
     strategy_ = new ThroughputJSObjectResizingStrategy();
     if (IsEnableFastJit() || IsEnableBaselineJit()) {
         ohos::JitTools::GetInstance().EnableJit(this);
     }
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    if (functionCallTimer_ == nullptr) {
+        SetFunctionCallTimer(FunctionCallTimer::Create(""));
+    }
+#endif
     initialized_ = true;
     return true;
 }
@@ -366,7 +374,10 @@ EcmaVM::~EcmaVM()
     }
 
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    DumpCallTimeInfo();
+    if (functionCallTimer_ != nullptr) {
+        functionCallTimer_->PrintAllStats();
+        functionCallTimer_ = nullptr;
+    }
 #endif
 
 #if defined(ECMASCRIPT_SUPPORT_TRACING)
@@ -447,11 +458,6 @@ EcmaVM::~EcmaVM()
         snapshotEnv_->ClearEnvMap();
         delete snapshotEnv_;
         snapshotEnv_ = nullptr;
-    }
-
-    if (callTimer_ != nullptr) {
-        delete callTimer_;
-        callTimer_ = nullptr;
     }
 
     if (strategy_ != nullptr) {
@@ -867,13 +873,6 @@ void EcmaVM::TriggerConcurrentCallback(JSTaggedValue result, JSTaggedValue hint)
     thread_->SetTaskInfo(reinterpret_cast<uintptr_t>(nullptr));
     concurrentCallback_(JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread_, result)), success,
                         taskInfo, concurrentData_);
-}
-
-void EcmaVM::DumpCallTimeInfo()
-{
-    if (callTimer_ != nullptr) {
-        callTimer_->PrintAllStats();
-    }
 }
 
 void EcmaVM::WorkersetInfo(EcmaVM *workerVm)

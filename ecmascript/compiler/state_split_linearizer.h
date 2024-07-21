@@ -27,11 +27,21 @@
 namespace panda::ecmascript::kungfu {
 class StateSplitLinearizer {
 public:
-    StateSplitLinearizer(CompilationEnv* env, Circuit *circuit, RPOVisitor *visitor, CompilationConfig *cmpCfg,
-                         bool enableLog, const std::string& name, Chunk* chunk)
-        : enableLog_(enableLog), methodName_(name), circuit_(circuit),
-        graphLinearizer_(circuit, enableLog, name, chunk, false, true),
-        lcrLowering_(env, circuit, visitor, cmpCfg, chunk) {}
+    StateSplitLinearizer(CompilationEnv* env,
+                         Circuit* circuit,
+                         RPOVisitor* visitor,
+                         CompilationConfig* cmpCfg,
+                         bool enableLog,
+                         const std::string& name,
+                         Chunk* chunk,
+                         const MethodLiteral* methodLiteral)
+        : enableLog_(enableLog),
+          methodName_(name),
+          circuit_(circuit),
+          graphLinearizer_(circuit, enableLog, name, chunk, false, true),
+          lcrLowering_(env, circuit, visitor, cmpCfg, chunk, methodLiteral)
+    {
+    }
 
     void Run();
 private:

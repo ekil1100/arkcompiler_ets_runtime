@@ -31,6 +31,17 @@ void CallStubBuilder::JSCallDispatchForBaseline(Label *exit, Label *noNeedCheckE
     Label funcIsCallable(env);
     Label funcNotCallable(env);
     JSCallInit(exit, &funcIsHeapObject, &funcIsCallable, &funcNotCallable);
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label intCall(env);
+    Label callStart(env);
+    BRANCH(JudgeAotAndFastCall(func_, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue_, RTSTUB_ID(StartCallTimerWithCommentId), {glue_, func_, False(), Int32(3)});
+        Jump(&callStart);
+    }
+    Bind(&callStart);
+#endif
 
     // 2. dispatch
     Label methodIsNative(env);
@@ -66,6 +77,17 @@ GateRef CallStubBuilder::JSCallDispatch()
     Label funcIsCallable(env);
     Label funcNotCallable(env);
     JSCallInit(&exit, &funcIsHeapObject, &funcIsCallable, &funcNotCallable);
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label intCall(env);
+    Label callStart(env);
+    BRANCH(JudgeAotAndFastCall(func_, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue_, RTSTUB_ID(StartCallTimerWithCommentId), {glue_, func_, False(), Int32(4)});
+        Jump(&callStart);
+    }
+    Bind(&callStart);
+#endif
 
     // 2. dispatch
     Label methodIsNative(env);
@@ -95,9 +117,6 @@ void CallStubBuilder::JSCallInit(Label *exit, Label *funcIsHeapObject, Label *fu
         // save pc
         SavePcIfNeeded(glue_);
     }
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue_, RTSTUB_ID(StartCallTimer, { glue_, func_, False()}));
-#endif
     if (checkIsCallable_) {
         BRANCH(TaggedIsHeapObject(func_), funcIsHeapObject, funcNotCallable);
         Bind(funcIsHeapObject);

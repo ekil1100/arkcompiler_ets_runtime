@@ -53,6 +53,8 @@ namespace panda::ecmascript::kungfu {
     V(LoopBack, LOOP_BACK, GateFlags::CONTROL, 1, 0, 0)                                         \
     V(Return, RETURN, GateFlags::HAS_ROOT, 1, 1, 1)                                             \
     V(ReturnVoid, RETURN_VOID, GateFlags::HAS_ROOT, 1, 1, 0)                                    \
+    V(StartCallTimer, START_CALL_TIMER, GateFlags::CHECKABLE, 1, 1, 0)                          \
+    V(EndCallTimer, END_CALL_TIMER, GateFlags::CHECKABLE, 1, 1, 0)                              \
     V(StateSplit, STATE_SPLIT, GateFlags::CHECKABLE, 1, 1, 0)                                   \
     V(GetEnv, GET_ENV, GateFlags::NO_WRITE, 0, 1, 1)
 
