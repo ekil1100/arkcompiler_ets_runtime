@@ -207,6 +207,8 @@ using FastCallAotEntryType = JSTaggedValue (*)(uintptr_t glue, uint32_t argc, co
     V(StringToNumber)                          \
     V(StringGetStart)                          \
     V(StringGetEnd)                            \
+    V(StartCallTimerForNativeCall)             \
+    V(EndCallTimerForNativeCall)               \
     V(StartCallTimerWithCommentId)             \
     V(EndCallTimerWithCommentId)               \
     V(StartCallTimer)                          \
@@ -609,6 +611,10 @@ public:
     static void ArrayTrim(uintptr_t argGlue, TaggedArray *array, int64_t newLength);
     static double TimeClip(double time);
     static double SetDateValues(double year, double month, double day);
+    static void StartCallTimerForNativeCall(
+        uintptr_t argGlue, JSTaggedType func, bool isAot, uint32_t nativeCallId, int32_t comment);
+    static void EndCallTimerForNativeCall(
+        uintptr_t argGlue, JSTaggedType func, bool isAot, uint32_t nativeCallId, int32_t comment);
     static void StartCallTimerWithStrComment(uintptr_t argGlue,
                                              JSTaggedType func,
                                              bool isAot,

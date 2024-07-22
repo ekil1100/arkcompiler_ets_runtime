@@ -24,6 +24,7 @@
 namespace panda::ecmascript {
 using ListHelper = ohos::EnableAotJitListHelper;
 std::shared_ptr<FunctionCallTimer> FunctionCallTimer::timer_ = nullptr;
+std::atomic_uint32_t FunctionCallTimer::nativeCallId_ = 0;
 
 std::shared_ptr<FunctionCallTimer> FunctionCallTimer::Create(const std::string& bundleName)
 {
@@ -43,7 +44,8 @@ FunctionCallTimer::FunctionCallTimer([[maybe_unused]] const std::string& bundleN
 #endif
 }
 
-void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
+void FunctionCallTimer::StartCount(
+    Method* method, bool isAot, std::string tag, bool isNative, uint32_t nativeCallId)
 {
     if (!IsEnable()) {
         return;
@@ -51,13 +53,17 @@ void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
     if (method == nullptr) {
         return;
     }
-    size_t id = method->GetMethodId().GetOffset();
-    CString name = GetFullName(method);
     FunctionCallStat* stat = nullptr;
-    if (isAot) {
-        stat = TryGetAotStat(name, id, isAot, tag);
+    if (isNative) {
+        stat = TryGetNativeStat(nativeCallId, isAot, tag);
     } else {
-        stat = TryGetIntStat(name, id, isAot, tag);
+        size_t id = method->GetMethodId().GetOffset();
+        const char* name = method->GetMethodName();
+        if (isAot) {
+            stat = TryGetAotStat(name, id, isAot, tag);
+        } else {
+            stat = TryGetIntStat(name, id, isAot, tag);
+        }
     }
     statStack_.push(stat);
     PandaRuntimeTimer* caller = nullptr;
@@ -68,10 +74,10 @@ void FunctionCallTimer::StartCount(Method* method, bool isAot, std::string tag)
     callee.SetParent(caller);
     callee.Start(stat, caller);
     timerStack_.push(callee);
-    PrintMethodInfo(method, isAot, "start", tag);
+    CountMethod("start", stat);
 }
 
-void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
+void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag, bool isNative, uint32_t nativeCallId)
 {
     if (!IsEnable()) {
         return;
@@ -79,22 +85,22 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
     if (method == nullptr) {
         return;
     }
-    size_t id = method->GetMethodId().GetOffset();
-    auto name = GetFullName(method);
     if (timerStack_.empty() || statStack_.empty()) {
         return;
     }
     PandaRuntimeTimer* callee = &timerStack_.top();
     FunctionCallStat* currentStat = statStack_.top();
-    if (currentStat->GetId() != id) {
-        // PrintStatStack();
-        LOG_TRACE(ERROR) << FUNCTIMER << "method not match, end"
-                         << " at " << tag << ", method: " << name << ":" << id << ", is aot: " << isAot
-                         << ", last start"
-                         << " at " << currentStat->GetTag() << ", method: " << currentStat->Name() << ":"
-                         << currentStat->GetId() << ", is aot: " << currentStat->IsAot();
-        if (count_[id] > 0) {
-            while (currentStat->GetId() != id) {
+    FunctionCallStat stat;
+    if (isNative) {
+        stat = FunctionCallStat(CString(std::to_string(nativeCallId)), nativeCallId, isAot, tag, true);
+    } else {
+        stat = FunctionCallStat(method->GetMethodName(), method->GetMethodId().GetOffset(), isAot, tag);
+    }
+    if (currentStat->GetStringId() != stat.GetStringId()) {
+        LOG_TRACE(ERROR) << FUNCTIMER << "method not match, end stat: " << StatToString(&stat)
+                         << ", start stat: " << StatToString(currentStat);
+        if (count_[stat.GetStringId()] > 0) {
+            while (currentStat->GetStringId() != stat.GetStringId()) {
                 callee->Stop();
                 statStack_.pop();
                 timerStack_.pop();
@@ -111,7 +117,7 @@ void FunctionCallTimer::StopCount(Method* method, bool isAot, std::string tag)
     callee->Stop();
     statStack_.pop();
     timerStack_.pop();
-    PrintMethodInfo(method, isAot, "end", tag);
+    CountMethod("end", &stat);
 }
 
 void FunctionCallTimer::FinishFunctionTimer()
@@ -131,8 +137,8 @@ std::string FunctionCallTimer::StatToString(FunctionCallStat* stat)
         return "[stat] nullptr";
     }
     std::ostringstream oss;
-    oss << "[stat] start at " << stat->GetTag() << ", name: " << stat->Name() << ", id: " << stat->GetId()
-        << ", is aot: " << stat->IsAot();
+    oss << "[stat] " << stat->GetTag() << ", name: " << stat->Name() << ", id: " << stat->GetId()
+        << ", is aot: " << stat->IsAot() << ", is native: " << stat->IsNative();
     return oss.str();
 }
 
@@ -219,19 +225,18 @@ void FunctionCallTimer::ResetStat()
     }
 }
 
-void FunctionCallTimer::PrintMethodInfo(Method* method, bool isAot, std::string state, std::string tag)
+void FunctionCallTimer::CountMethod(std::string state, FunctionCallStat* stat)
 {
-    if (method == nullptr) {
+    if (stat == nullptr) {
         return;
     }
-    auto name = GetFullName(method);
-    auto id = method->GetMethodId().GetOffset();
+    std::string id = stat->GetStringId();
     if (state == "start") {
         count_[id]++;
     }
     auto count = std::to_string(count_[id]) + ":" + std::to_string(timerStack_.size());
-    LOG_TRACE(DEBUG) << FUNCTIMER << std::left << std::setw(5) << count << " " << state << " at " << tag
-                     << ", method: " << name << ", id: " << id << ", is aot: " << isAot;
+    LOG_TRACE(DEBUG) << FUNCTIMER << std::left << std::setw(5) << count << " " << state << " "
+                     << StatToString(stat);
     if (state == "end") {
         count_[id]--;
     }
@@ -285,5 +290,17 @@ FunctionCallStat* FunctionCallTimer::TryGetIntStat(CString name, size_t id, bool
         iter->second.SetTag(tag);
     }
     return &intCallStat_[id];
+}
+
+FunctionCallStat* FunctionCallTimer::TryGetNativeStat(uint32_t id, bool isAot, std::string tag)
+{
+    auto iter = nativeCallStat_.find(id);
+    if (iter == nativeCallStat_.end()) {
+        FunctionCallStat stat(CString(std::to_string(id)), id, isAot, tag, true);
+        nativeCallStat_[id] = stat;
+    } else {
+        iter->second.SetTag(tag);
+    }
+    return &nativeCallStat_[id];
 }
 } // namespace panda::ecmascript

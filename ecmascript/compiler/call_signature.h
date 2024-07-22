@@ -532,6 +532,8 @@ private:
     V(TimeClip)                                 \
     V(SetDateValues)                            \
     V(CallReturnWithArgv)                       \
+    V(StartCallTimerForNativeCall)              \
+    V(EndCallTimerForNativeCall)                \
     V(StartCallTimerWithCommentId)              \
     V(EndCallTimerWithCommentId)                \
     V(StartCallTimerWithComment)                \

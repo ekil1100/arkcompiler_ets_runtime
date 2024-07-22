@@ -2624,6 +2624,42 @@ DEF_CALL_SIGNATURE(SetDateValues)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
 }
 
+DEF_CALL_SIGNATURE(StartCallTimerForNativeCall)
+{
+    const int numberOfArgs = 5;
+    CallSignature index(
+        "StartCallTimerForNativeCall", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::NATIVE_POINTER(), // glue
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::INT32(), // native call id
+        VariableType::INT32(), // comment id
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
+DEF_CALL_SIGNATURE(EndCallTimerForNativeCall)
+{
+    const int numberOfArgs = 5;
+    CallSignature index(
+        "EndCallTimerForNativeCall", 0, numberOfArgs, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
+    std::array<VariableType, numberOfArgs> params = {
+        VariableType::NATIVE_POINTER(), // glue
+        VariableType::JS_ANY(), // function
+        VariableType::BOOL(), // isAot
+        VariableType::INT32(), // native call id
+        VariableType::INT32(), // comment id
+    };
+    callSign->SetParameters(params.data());
+    callSign->SetGCLeafFunction(true);
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB_NO_GC);
+}
+
 DEF_CALL_SIGNATURE(StartCallTimerWithCommentId)
 {
     const int numberOfArgs = 4;

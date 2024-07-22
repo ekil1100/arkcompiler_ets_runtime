@@ -17,8 +17,10 @@
 
 #include "ecmascript/compiler/assembler_module.h"
 #include "ecmascript/compiler/stub_builder-inl.h"
+#include "ecmascript/dfx/vmstat/function_call_timer.h"
 
 namespace panda::ecmascript::kungfu {
+using FunctionCallTimer = panda::ecmascript::FunctionCallTimer;
 
 void CallStubBuilder::JSCallDispatchForBaseline(Label *exit, Label *noNeedCheckException)
 {
@@ -31,17 +33,6 @@ void CallStubBuilder::JSCallDispatchForBaseline(Label *exit, Label *noNeedCheckE
     Label funcIsCallable(env);
     Label funcNotCallable(env);
     JSCallInit(exit, &funcIsHeapObject, &funcIsCallable, &funcNotCallable);
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    Label intCall(env);
-    Label callStart(env);
-    BRANCH(JudgeAotAndFastCall(func_, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
-    Bind(&intCall);
-    {
-        CallNGCRuntime(glue_, RTSTUB_ID(StartCallTimerWithCommentId), {glue_, func_, False(), Int32(3)});
-        Jump(&callStart);
-    }
-    Bind(&callStart);
-#endif
 
     // 2. dispatch
     Label methodIsNative(env);
@@ -77,17 +68,6 @@ GateRef CallStubBuilder::JSCallDispatch()
     Label funcIsCallable(env);
     Label funcNotCallable(env);
     JSCallInit(&exit, &funcIsHeapObject, &funcIsCallable, &funcNotCallable);
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    Label intCall(env);
-    Label callStart(env);
-    BRANCH(JudgeAotAndFastCall(func_, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
-    Bind(&intCall);
-    {
-        CallNGCRuntime(glue_, RTSTUB_ID(StartCallTimerWithCommentId), {glue_, func_, False(), Int32(4)});
-        Jump(&callStart);
-    }
-    Bind(&callStart);
-#endif
 
     // 2. dispatch
     Label methodIsNative(env);
@@ -140,6 +120,12 @@ void CallStubBuilder::JSCallInit(Label *exit, Label *funcIsHeapObject, Label *fu
 
 void CallStubBuilder::JSCallNative(Label *exit)
 {
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    int32_t currentNativeCallId = FunctionCallTimer::GetAndIncreaseNativeCallId();
+    CallNGCRuntime(glue_,
+                   RTSTUB_ID(StartCallTimerForNativeCall),
+                   {glue_, func_, False(), Int32(currentNativeCallId), Int32(4)});
+#endif
     HandleProfileNativeCall();
     GateRef ret;
     nativeCode_ = Load(VariableType::NATIVE_POINTER(), method_,
@@ -192,6 +178,10 @@ void CallStubBuilder::JSCallNative(Label *exit)
             LOG_ECMA(FATAL) << "this branch is unreachable";
             UNREACHABLE();
     }
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    CallNGCRuntime(
+        glue_, RTSTUB_ID(EndCallTimerForNativeCall), {glue_, func_, False(), Int32(currentNativeCallId), Int32(4)});
+#endif
     result_->WriteVariable(ret);
     Jump(exit);
 }
@@ -203,7 +193,17 @@ void CallStubBuilder::JSCallJSFunction(Label *exit, Label *noNeedCheckException)
     Label funcIsClassConstructor(env);
     Label funcNotClassConstructor(env);
     Label methodNotAot(env);
-
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label intCall(env);
+    Label callStart(env);
+    BRANCH(JudgeAotAndFastCall(func_, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue_, RTSTUB_ID(StartCallTimerWithCommentId), {glue_, func_, False(), Int32(3)});
+        Jump(&callStart);
+    }
+    Bind(&callStart);
+#endif
     if (!AssemblerModule::IsCallNew(callArgs_.mode)) {
         BRANCH(IsClassConstructorFromBitField(bitfield_), &funcIsClassConstructor, &funcNotClassConstructor);
         Bind(&funcIsClassConstructor);

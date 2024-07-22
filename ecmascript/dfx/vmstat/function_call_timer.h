@@ -52,8 +52,14 @@ class EcmaVM;
 
 class FunctionCallStat : public PandaRuntimeCallerStat {
 public:
-    explicit FunctionCallStat(const CString& name, const size_t id, bool isAot, std::string tag)
-        : PandaRuntimeCallerStat(name), isAot_(isAot), id_(id), tag_(tag)
+    explicit FunctionCallStat(
+        const CString& name, const size_t id, bool isAot, std::string tag, bool isNative = false)
+        : PandaRuntimeCallerStat(name),
+          isAot_(isAot),
+          id_(id),
+          tag_(tag),
+          isNative_(isNative),
+          strId_(GenStringId(isNative, id))
     {
     }
     FunctionCallStat() = default;
@@ -79,10 +85,31 @@ public:
         tag_ = tag;
     }
 
+    bool IsNative() const
+    {
+        return isNative_;
+    }
+
+    std::string GetStringId() const
+    {
+        return strId_;
+    }
+
+    std::string GenStringId(bool isNative, size_t id)
+    {
+        if (isNative) {
+            return "native" + std::to_string(id);
+        } else {
+            return std::to_string(id);
+        }
+    }
+
 private:
     bool isAot_ {false};
     size_t id_ {0};
     std::string tag_;
+    bool isNative_ {false};
+    std::string strId_;
 };
 
 class FunctionCallTimer {
@@ -90,35 +117,43 @@ public:
     static constexpr const int SIGNO = 39;
     static constexpr const char* FUNCTIMER = "[FunctionTimer] ";
     static std::shared_ptr<FunctionCallTimer> Create(const std::string& bundleName);
-
+    static uint32_t GetAndIncreaseNativeCallId()
+    {
+        return nativeCallId_++;
+    }
     FunctionCallTimer(const std::string& bundleName);
     ~FunctionCallTimer() = default;
-    void StartCount(Method* method, bool isAot, std::string tag = "unknown");
-    void StopCount(Method* method, bool isAot, std::string tag = "unknown");
+    void StartCount(
+        Method* method, bool isAot, std::string tag = "unknown", bool isNative = false, uint32_t nativeCallId = 0);
+    void StopCount(
+        Method* method, bool isAot, std::string tag = "unknown", bool isNative = false, uint32_t nativeCallId = 0);
     void PrintAllStats();
     void ResetStat();
 
 private:
     static void RegisteFunctionTimerSignal(int signo);
     static void RegisterHandler(std::shared_ptr<FunctionCallTimer> timer);
-    static std::shared_ptr<FunctionCallTimer> timer_;
-
     FunctionCallStat* TryGetAotStat(CString name, size_t id, bool isAot = true, std::string tag = "unknown");
     FunctionCallStat* TryGetIntStat(CString name, size_t id, bool isAot = false, std::string tag = "unknown");
+    FunctionCallStat* TryGetNativeStat(uint32_t id, bool isAot = false, std::string tag = "unknown");
     void PrintStatStack();
     std::string StatToString(FunctionCallStat* stat);
     void FinishFunctionTimer();
     void FunctionTimerSignalHandler(int signo);
-    void PrintMethodInfo(Method* method, bool isAot, std::string state, std::string tag);
+    void CountMethod(std::string state, FunctionCallStat* stat);
     CString GetFullName(Method* method);
     bool IsEnable()
     {
         return enable_;
     }
+
+    static std::shared_ptr<FunctionCallTimer> timer_;
+    static std::atomic_uint32_t nativeCallId_;
     std::set<std::string> ignoreList_ {"setTimeout"};
     CMap<size_t, FunctionCallStat> aotCallStat_ {};
     CMap<size_t, FunctionCallStat> intCallStat_ {};
-    CMap<size_t, int> count_ {};
+    CMap<size_t, FunctionCallStat> nativeCallStat_ {};
+    CMap<std::string, int> count_ {};
     std::stack<PandaRuntimeTimer> timerStack_ {};
     std::stack<FunctionCallStat*> statStack_ {};
     bool finished_ = false;

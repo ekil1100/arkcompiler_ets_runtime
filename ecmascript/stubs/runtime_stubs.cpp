@@ -3664,8 +3664,8 @@ static const std::map<int32_t, std::string> comments = {
     {0, "HandleResumegenerator"},
     {1, "HandleReturn"},
     {2, "HandleDeprecatedResumegeneratorPrefV8"},
-    {3, "JSCallDispatchForBaseline"},
-    {4, "JSCallDispatch"},
+    {3, "JSCallJSFunction"},
+    {4, "JSCallNative"},
     {5, "BaselineResumegeneratorStubBuilder::GenerateCircuit"},
     {6, "BaselineDeprecatedResumegeneratorPrefV8StubBuilder::GenerateCircuit"},
     {7, "HandleReturnundefined"},
@@ -3684,7 +3684,32 @@ static const std::map<int32_t, std::string> comments = {
     {20, "LowerFastSuperCall3"},
     {21, "ExceptionHandler"},
     {22, "ExceptionReturn"},
+    {23, "Execute"},
 };
+
+void RuntimeStubs::StartCallTimerForNativeCall(
+    uintptr_t argGlue, JSTaggedType func, bool isAot, uint32_t nativeCallId, int32_t comment)
+{
+    JSTaggedValue callTarget(func);
+    Method* method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
+    if (method->IsNativeWithCallField()) {
+        auto thread = JSThread::GlueToJSThread(argGlue);
+        auto timer = thread->GetEcmaVM()->GetFunctionCallTimer();
+        timer->StartCount(method, isAot, std::to_string(comment), true, nativeCallId);
+    }
+}
+
+void RuntimeStubs::EndCallTimerForNativeCall(
+    uintptr_t argGlue, JSTaggedType func, bool isAot, uint32_t nativeCallId, int32_t comment)
+{
+    JSTaggedValue callTarget(func);
+    Method* method = Method::Cast(JSFunction::Cast(callTarget)->GetMethod());
+    if (method->IsNativeWithCallField()) {
+        auto thread = JSThread::GlueToJSThread(argGlue);
+        auto timer = thread->GetEcmaVM()->GetFunctionCallTimer();
+        timer->StopCount(method, isAot, std::to_string(comment), true, nativeCallId);
+    }
+}
 
 void RuntimeStubs::StartCallTimerWithStrComment(uintptr_t argGlue,
                                                 JSTaggedType func,
@@ -3729,6 +3754,9 @@ void RuntimeStubs::EndCallTimerWithComment(uintptr_t argGlue, JSTaggedType func,
 
 void RuntimeStubs::StartCallTimerWithCommentId(uintptr_t argGlue, JSTaggedType func, bool isAot, int32_t comment)
 {
+#ifdef AOT_ESCAPE_ENABLE
+    StartCallTimerWithStrComment(argGlue, func, isAot);
+#else
     std::string tag;
     if (comments.find(comment) == comments.end()) {
         tag = std::to_string(comment);
@@ -3736,10 +3764,14 @@ void RuntimeStubs::StartCallTimerWithCommentId(uintptr_t argGlue, JSTaggedType f
         tag = comments.at(comment);
     }
     StartCallTimerWithStrComment(argGlue, func, isAot, tag);
+#endif
 }
 
 void RuntimeStubs::EndCallTimerWithCommentId(uintptr_t argGlue, JSTaggedType func, bool isAot, int32_t comment)
 {
+#ifdef AOT_ESCAPE_ENABLE
+    EndCallTimerWithStrComment(argGlue, func, isAot);
+#else
     std::string tag;
     if (comments.find(comment) == comments.end()) {
         tag = std::to_string(comment);
@@ -3747,6 +3779,7 @@ void RuntimeStubs::EndCallTimerWithCommentId(uintptr_t argGlue, JSTaggedType fun
         tag = comments.at(comment);
     }
     EndCallTimerWithStrComment(argGlue, func, isAot, tag);
+#endif
 }
 
 void RuntimeStubs::StartCallTimer(uintptr_t argGlue, JSTaggedType func, bool isAot)
