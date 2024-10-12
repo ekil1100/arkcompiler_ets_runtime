@@ -23,6 +23,10 @@
 
 namespace panda::ecmascript {
 class EcmaVM;
+using CallType = uint32_t;
+static constexpr CallType CALL_TYPE_AOT = 0;
+static constexpr CallType CALL_TYPE_INT = 1;
+static constexpr CallType CALL_TYPE_NATIVE = 2;
 
 // Description:
 // FunctionCallTimer is a tool used to count the number of calls, maximum time, total time, and average time of JS&TS
@@ -52,34 +56,92 @@ class EcmaVM;
 
 class FunctionCallStat : public PandaRuntimeCallerStat {
 public:
-    explicit FunctionCallStat(const CString &name, bool isAot) : PandaRuntimeCallerStat(name), isAot_(isAot) {}
+    FunctionCallStat(Method* method, uint32_t id, CallType type)
+        : PandaRuntimeCallerStat(method->GetMethodName()), type_(type), id_(id), uniqueId_(GenUniqueId(type, id))
+    {
+    }
+    FunctionCallStat(const char* name, uint32_t id, CallType type)
+        : PandaRuntimeCallerStat(name), type_(type), id_(id), uniqueId_(GenUniqueId(type, id))
+    {
+    }
     FunctionCallStat() = default;
     ~FunctionCallStat() = default;
 
-    bool IsAot() const
+    size_t GetId() const
     {
-        return isAot_;
+        return id_;
     }
+
+    CallType GetType() const
+    {
+        return type_;
+    }
+
+    uint32_t GetUniqueId() const
+    {
+        return uniqueId_;
+    }
+
+    uint32_t GenUniqueId(CallType type, uint32_t id)
+    {
+        if (type == CALL_TYPE_NATIVE) {
+            return id | NATIVE_MASK;
+        } else {
+            return id;
+        }
+    }
+
+    static uint32_t GenUniqueId(CallType type, uint32_t id, uint32_t nativeId)
+    {
+        if (type == CALL_TYPE_NATIVE) {
+            return nativeId | NATIVE_MASK;
+        } else {
+            return id;
+        }
+    }
+
 private:
-    bool isAot_ {false};
+    static constexpr const uint32_t NATIVE_MASK = 1U << 31;
+    CallType type_ {CALL_TYPE_AOT};
+    uint32_t id_ {0};
+    uint32_t uniqueId_ {0};
 };
 
 class FunctionCallTimer {
 public:
-    FunctionCallTimer() = default;
+    static constexpr const int SIGNO = 39;
+    static constexpr const char* FUNCTIMER = "[FunctionTimer] ";
+    static std::shared_ptr<FunctionCallTimer> Create(const std::string& bundleName);
+    PUBLIC_API static uint32_t GetAndIncreaseNativeCallId();
+    FunctionCallTimer(const std::string& bundleName);
     ~FunctionCallTimer() = default;
-    void StartCount(size_t id, bool isAot);
-    void StopCount(Method *method);
+    void StartCount(Method* method, CallType type = CALL_TYPE_AOT, uint32_t nativeCallId = 0);
+    void StopCount(Method* method, CallType type = CALL_TYPE_AOT, uint32_t nativeCallId = 0);
     void PrintAllStats();
-    CString GetFullName(Method *method);
-    void InitialStatAndTimer(Method *method, size_t methodId, bool isAot);
     void ResetStat();
 
 private:
-    PandaRuntimeTimer *currentTimer_ = nullptr;
-    CMap<size_t, FunctionCallStat> aotCallStat_ {};
-    CMap<size_t, FunctionCallStat> intCallStat_ {};
-    CMap<size_t, PandaRuntimeTimer> callTimer_ {};
+    static void RegisteFunctionTimerSignal(int signo);
+    static void RegisterHandler(std::shared_ptr<FunctionCallTimer> timer);
+    FunctionCallStat* TryGetAotStat(Method* method, CallType type = CALL_TYPE_AOT);
+    FunctionCallStat* TryGetIntStat(Method* method, CallType type = CALL_TYPE_AOT);
+    FunctionCallStat* TryGetNativeStat(uint32_t id);
+    std::string StatToString(FunctionCallStat* stat);
+    void FunctionTimerSignalHandler(int signo);
+    void CountMethod(bool isStart, uint32_t id);
+    inline bool IsEnable()
+    {
+        return enable_;
+    }
+
+    static std::weak_ptr<FunctionCallTimer> timer_;
+    static std::atomic_uint32_t nativeCallId_;
+    CUnorderedMap<uint32_t, FunctionCallStat> aotCallStat_ {};
+    CUnorderedMap<uint32_t, FunctionCallStat> intCallStat_ {};
+    CUnorderedMap<uint32_t, FunctionCallStat> nativeCallStat_ {};
+    CUnorderedMap<uint32_t, int> count_ {};
+    bool enable_ = false;
+    PandaRuntimeTimer* parent_ {nullptr};
 };
 }
 #endif // ECMASCRIPT_DFX_VMSTAT_FCUNTION_CALL_TIMER_H

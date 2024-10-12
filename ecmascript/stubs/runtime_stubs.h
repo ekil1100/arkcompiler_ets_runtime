@@ -24,6 +24,7 @@
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/stubs/runtime_stub_list.h"
+#include "ecmascript/dfx/vmstat/function_call_timer.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
@@ -147,8 +148,16 @@ public:
     static void ArrayTrim(uintptr_t argGlue, TaggedArray *array, int64_t newLength);
     static double TimeClip(double time);
     static double SetDateValues(double year, double month, double day);
-    static void StartCallTimer(uintptr_t argGlue, JSTaggedType func, bool isAot);
-    static void EndCallTimer(uintptr_t argGlue, JSTaggedType func);
+    static void StartCallTimerForNativeCall(uintptr_t argGlue,
+                                            JSTaggedType func,
+                                            CallType type,
+                                            uint32_t nativeCallId);
+    static void EndCallTimerForNativeCall(uintptr_t argGlue,
+                                          JSTaggedType func,
+                                          CallType type,
+                                          uint32_t nativeCallId);
+    static void StartCallTimer(uintptr_t argGlue, JSTaggedType func, CallType type);
+    static void EndCallTimer(uintptr_t argGlue, JSTaggedType func, CallType type);
     static JSTaggedValue RuntimeArraySort(JSThread *thread, JSHandle<JSTaggedValue> thisHandle);
 
     static JSTaggedValue CallBoundFunction(EcmaRuntimeCallInfo *info);

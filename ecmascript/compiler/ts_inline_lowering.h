@@ -43,12 +43,18 @@ private:
 class TSInlineLowering {
 public:
     static constexpr size_t MAX_INLINE_CALL_ALLOWED = 6;
-    TSInlineLowering(Circuit *circuit, PassContext *ctx, bool enableLog, const std::string &name,
-                     NativeAreaAllocator *nativeAreaAllocator, PassOptions *options, uint32_t methodOffset,
-                     CallMethodFlagMap *callMethodFlagMap)
+    TSInlineLowering(Circuit* circuit,
+                     PassContext* ctx,
+                     bool enableLog,
+                     const std::string& name,
+                     NativeAreaAllocator* nativeAreaAllocator,
+                     PassOptions* options,
+                     uint32_t methodOffset,
+                     CallMethodFlagMap* callMethodFlagMap,
+                     const MethodLiteral* methodLiteral)
         : circuit_(circuit),
           compilationEnv_(ctx->GetCompilationEnv()),
-          acc_(circuit),
+          acc_(circuit, methodLiteral),
           glue_(acc_.GetGlueFromArgList()),
           builder_(circuit, ctx->GetCompilerConfig()),
           ptManager_(ctx->GetPTManager()),
@@ -65,7 +71,9 @@ public:
           inlinedCallMap_(circuit->chunk()),
           argAcc_(circuit),
           initMethodOffset_(methodOffset),
-          callMethodFlagMap_(callMethodFlagMap) {}
+          callMethodFlagMap_(callMethodFlagMap)
+    {
+    }
 
     ~TSInlineLowering() = default;
 

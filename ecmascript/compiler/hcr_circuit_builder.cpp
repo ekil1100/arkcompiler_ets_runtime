@@ -17,6 +17,9 @@
 #include "ecmascript/compiler/common_stub_csigns.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/compiler/circuit_builder-inl.h"
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+#include "ecmascript/dfx/vmstat/function_call_timer.h"
+#endif
 
 namespace panda::ecmascript::kungfu {
 
@@ -279,25 +282,81 @@ GateRef CircuitBuilder::CallNGCRuntime(GateRef glue, GateRef gate, int index, co
     }
 }
 
-void CircuitBuilder::StartCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef> &args, bool useLabel)
+void CircuitBuilder::StartCallTimerForIntOnly(GateRef glue,
+                                              GateRef gate,
+                                              const std::vector<GateRef>& args,
+                                              bool useLabel)
 {
     (void)glue;
     (void)gate;
     (void)args;
     (void)useLabel;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue, gate, RTSTUB_ID(StartCallTimer), args, useLabel);
+    Label entry(env_);
+    SubCfgEntry(&entry);
+    Label intCall(this);
+    Label exit(this);
+    GateRef func = args.at(0);
+    BRANCH_CIR2(JudgeAotAndFastCall(func, JudgeMethodType::HAS_AOT), &exit, &intCall);
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue, gate, RTSTUB_ID(StartCallTimer), {glue, func, Int32(CALL_TYPE_INT)}, useLabel);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    SubCfgExit();
 #endif
 }
 
-void CircuitBuilder::EndCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef> &args, bool useLabel)
+void CircuitBuilder::StartCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef>& args, bool useLabel)
 {
     (void)glue;
     (void)gate;
     (void)args;
     (void)useLabel;
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue, gate, RTSTUB_ID(EndCallTimer), args, useLabel);
+    Label entry(env_);
+    SubCfgEntry(&entry);
+    Label aotCall(this);
+    Label intCall(this);
+    Label exit(this);
+    GateRef func = args.at(0);
+    BRANCH_CIR2(JudgeAotAndFastCall(func, JudgeMethodType::HAS_AOT), &aotCall, &intCall);
+    Bind(&aotCall);
+    {
+        CallNGCRuntime(glue, gate, RTSTUB_ID(StartCallTimer), {glue, func, Int32(CALL_TYPE_AOT)}, useLabel);
+        Jump(&exit);
+    }
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue, gate, RTSTUB_ID(StartCallTimer), {glue, func, Int32(CALL_TYPE_INT)}, useLabel);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    SubCfgExit();
+#endif
+}
+
+void CircuitBuilder::EndCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef>& args, bool useLabel)
+{
+    (void)glue;
+    (void)gate;
+    (void)args;
+    (void)useLabel;
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label entry(env_);
+    SubCfgEntry(&entry);
+    Label aotCall(this);
+    Label exit(this);
+    GateRef func = args.at(0);
+    BRANCH_CIR2(JudgeAotAndFastCall(func, JudgeMethodType::HAS_AOT), &aotCall, &exit);
+    Bind(&aotCall);
+    {
+        CallNGCRuntime(glue, gate, RTSTUB_ID(EndCallTimer), {glue, func, Int32(CALL_TYPE_AOT)}, useLabel);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    SubCfgExit();
 #endif
 }
 

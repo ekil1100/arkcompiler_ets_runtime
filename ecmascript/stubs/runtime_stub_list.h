@@ -180,6 +180,8 @@ namespace panda::ecmascript {
     V(SetDateValues)                           \
     V(StartCallTimer)                          \
     V(EndCallTimer)                            \
+    V(StartCallTimerForNativeCall)             \
+    V(EndCallTimerForNativeCall)               \
     V(BigIntSameValueZero)                     \
     V(JSHClassFindProtoTransitions)            \
     V(NumberHelperStringToDouble)              \

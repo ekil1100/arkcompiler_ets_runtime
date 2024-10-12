@@ -23,6 +23,11 @@
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+#include "ecmascript/stubs/runtime_stubs.h"
+#include "ecmascript/dfx/vmstat/function_call_timer.h"
+#endif
+
 namespace panda::ecmascript {
 using panda::ecmascript::kungfu::CommonStubCSigns;
 #if defined(__clang__)
@@ -252,7 +257,13 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
         return JSTaggedValue(res);
     }
 #if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    RuntimeStubs::StartCallTimer(thread->GetGlueAddr(), info->GetFunctionValue().GetRawData(), false);
+    auto currentNativeCallId = FunctionCallTimer::GetAndIncreaseNativeCallId();
+    if (method->IsNativeWithCallField()) {
+        RuntimeStubs::StartCallTimerForNativeCall(
+            thread->GetGlueAddr(), info->GetFunctionValue().GetRawData(), CALL_TYPE_NATIVE, currentNativeCallId);
+    } else {
+        RuntimeStubs::StartCallTimer(thread->GetGlueAddr(), info->GetFunctionValue().GetRawData(), CALL_TYPE_INT);
+    }
 #endif
     if (thread->IsDebugMode() && !method->IsNativeWithCallField()) {
         JSHandle<JSFunction> func(thread, info->GetFunctionValue());
@@ -274,6 +285,12 @@ JSTaggedValue InterpreterAssembly::Execute(EcmaRuntimeCallInfo *info)
 
 #if ECMASCRIPT_ENABLE_STUB_RESULT_CHECK
     thread->CheckJSTaggedType(JSTaggedValue(acc).GetRawData());
+#endif
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    if (method->IsNativeWithCallField()) {
+        RuntimeStubs::EndCallTimerForNativeCall(
+            thread->GetGlueAddr(), info->GetFunctionValue().GetRawData(), CALL_TYPE_NATIVE, currentNativeCallId);
+    }
 #endif
     return JSTaggedValue(acc);
 }

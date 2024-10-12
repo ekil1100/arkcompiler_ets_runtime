@@ -28,6 +28,9 @@
 #include "ecmascript/containers/containers_errors.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/module/js_module_manager.h"
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+#include "ecmascript/dfx/vmstat/function_call_timer.h"
+#endif
 
 namespace panda::ecmascript::builtins {
 using NumberHelper = base::NumberHelper;
@@ -832,7 +835,8 @@ JSTaggedValue BuiltinsGlobal::PrintFunctionCallStat(EcmaRuntimeCallInfo *msg)
     BUILTINS_API_TRACE(thread, Global, PrintFunctionCallStat);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     // start vm runtime stat statistic
-    thread->GetEcmaVM()->DumpCallTimeInfo();
+    auto timer = thread->GetEcmaVM()->GetFunctionCallTimer();
+    timer->PrintAllStats();
     return JSTaggedValue::Undefined();
 }
 #endif

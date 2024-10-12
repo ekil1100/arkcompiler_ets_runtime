@@ -17,8 +17,12 @@
 
 #include "ecmascript/compiler/assembler_module.h"
 #include "ecmascript/compiler/stub_builder-inl.h"
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+#include "ecmascript/dfx/vmstat/function_call_timer.h"
+#endif
 
 namespace panda::ecmascript::kungfu {
+using FunctionCallTimer = panda::ecmascript::FunctionCallTimer;
 
 void CallStubBuilder::JSCallDispatchForBaseline(Label *exit, Label *noNeedCheckException)
 {
@@ -95,9 +99,6 @@ void CallStubBuilder::JSCallInit(Label *exit, Label *funcIsHeapObject, Label *fu
         // save pc
         SavePcIfNeeded(glue_);
     }
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    CallNGCRuntime(glue_, RTSTUB_ID(StartCallTimer, { glue_, func_, False()}));
-#endif
     if (checkIsCallable_) {
         BRANCH(TaggedIsHeapObject(func_), funcIsHeapObject, funcNotCallable);
         Bind(funcIsHeapObject);
@@ -121,6 +122,12 @@ void CallStubBuilder::JSCallInit(Label *exit, Label *funcIsHeapObject, Label *fu
 
 void CallStubBuilder::JSCallNative(Label *exit)
 {
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    int32_t currentNativeCallId = FunctionCallTimer::GetAndIncreaseNativeCallId();
+    CallNGCRuntime(glue_,
+                   RTSTUB_ID(StartCallTimerForNativeCall),
+                   {glue_, func_, Int32(CALL_TYPE_NATIVE), Int32(currentNativeCallId)});
+#endif
     HandleProfileNativeCall();
     GateRef ret;
     nativeCode_ = Load(VariableType::NATIVE_POINTER(), method_,
@@ -134,6 +141,7 @@ void CallStubBuilder::JSCallNative(Label *exit)
     std::vector<GateRef> argsForNative = PrepareArgsForNative();
     auto env = GetEnvironment();
     Label notFastBuiltins(env);
+    Label end(env);
     switch (callArgs_.mode) {
         case JSCallMode::CALL_THIS_ARG0:
         case JSCallMode::CALL_THIS_ARG1:
@@ -142,7 +150,7 @@ void CallStubBuilder::JSCallNative(Label *exit)
         case JSCallMode::CALL_CONSTRUCTOR_WITH_ARGV:
         case JSCallMode::DEPRECATED_CALL_CONSTRUCTOR_WITH_ARGV:
             numArgsKeeper = numArgs_;
-            CallFastBuiltin(&notFastBuiltins, exit);
+            CallFastBuiltin(&notFastBuiltins, &end);
             Bind(&notFastBuiltins);
             numArgs_ = numArgsKeeper;
             [[fallthrough]];
@@ -174,6 +182,13 @@ void CallStubBuilder::JSCallNative(Label *exit)
             UNREACHABLE();
     }
     result_->WriteVariable(ret);
+    Jump(&end);
+    Bind(&end);
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    CallNGCRuntime(glue_,
+                   RTSTUB_ID(EndCallTimerForNativeCall),
+                   {glue_, func_, Int32(CALL_TYPE_NATIVE), Int32(currentNativeCallId)});
+#endif
     Jump(exit);
 }
 
@@ -184,7 +199,17 @@ void CallStubBuilder::JSCallJSFunction(Label *exit, Label *noNeedCheckException)
     Label funcIsClassConstructor(env);
     Label funcNotClassConstructor(env);
     Label methodNotAot(env);
-
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    Label intCall(env);
+    Label callStart(env);
+    BRANCH(JudgeAotAndFastCall(func_, CircuitBuilder::JudgeMethodType::HAS_AOT), &callStart, &intCall);
+    Bind(&intCall);
+    {
+        CallNGCRuntime(glue_, RTSTUB_ID(StartCallTimer), {glue_, func_, Int32(CALL_TYPE_INT)});
+        Jump(&callStart);
+    }
+    Bind(&callStart);
+#endif
     if (!AssemblerModule::IsCallNew(callArgs_.mode)) {
         BRANCH(IsClassConstructorFromBitField(bitfield_), &funcIsClassConstructor, &funcNotClassConstructor);
         Bind(&funcIsClassConstructor);

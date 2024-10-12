@@ -35,7 +35,9 @@
 #include "ecmascript/dfx/hprof/heap_profiler_interface.h"
 #endif
 #include "ecmascript/dfx/tracing/tracing.h"
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
 #include "ecmascript/dfx/vmstat/function_call_timer.h"
+#endif
 #include "ecmascript/mem/shared_heap/shared_concurrent_marker.h"
 #include "ecmascript/module/module_logger.h"
 #include "ecmascript/pgo_profiler/pgo_trace.h"
@@ -160,6 +162,11 @@ void EcmaVM::PostFork()
     if (startIdleMonitor != nullptr) {
         startIdleMonitor();
     }
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    if (functionCallTimer_ == nullptr && !bundleName.empty()) {
+        SetFunctionCallTimer(FunctionCallTimer::Create(bundleName));
+    }
+#endif
 }
 
 EcmaVM::EcmaVM(JSRuntimeOptions options, EcmaParamConfiguration config)
@@ -296,12 +303,15 @@ bool EcmaVM::Initialize()
     if (options_.EnableEdenGC()) {
         heap_->EnableEdenGC();
     }
-
-    callTimer_ = new FunctionCallTimer();
     strategy_ = new ThroughputJSObjectResizingStrategy();
     if (IsEnableFastJit() || IsEnableBaselineJit()) {
         Jit::GetInstance()->ConfigJit(this);
     }
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER && !defined(OHOS_FUNCTION_TIMER_ENABLE)
+    if (functionCallTimer_ == nullptr) {
+        SetFunctionCallTimer(FunctionCallTimer::Create(""));
+    }
+#endif
     initialized_ = true;
     return true;
 }
@@ -353,8 +363,11 @@ EcmaVM::~EcmaVM()
         pgoProfiler_ = nullptr;
     }
 
-#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
-    DumpCallTimeInfo();
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER && !defined(OHOS_FUNCTION_TIMER_ENABLE)
+    if (functionCallTimer_ != nullptr) {
+        functionCallTimer_->PrintAllStats();
+        functionCallTimer_ = nullptr;
+    }
 #endif
 
 #if defined(ECMASCRIPT_SUPPORT_TRACING)
@@ -435,11 +448,6 @@ EcmaVM::~EcmaVM()
         snapshotEnv_->ClearEnvMap();
         delete snapshotEnv_;
         snapshotEnv_ = nullptr;
-    }
-
-    if (callTimer_ != nullptr) {
-        delete callTimer_;
-        callTimer_ = nullptr;
     }
 
     if (strategy_ != nullptr) {
@@ -805,13 +813,6 @@ void EcmaVM::TriggerConcurrentCallback(JSTaggedValue result, JSTaggedValue hint)
     auto localResultRef = JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>(thread_, result));
     ThreadNativeScope nativeScope(thread_);
     concurrentCallback_(localResultRef, success, taskInfo, concurrentData_);
-}
-
-void EcmaVM::DumpCallTimeInfo()
-{
-    if (callTimer_ != nullptr) {
-        callTimer_->PrintAllStats();
-    }
 }
 
 void EcmaVM::WorkersetInfo(EcmaVM *workerVm)

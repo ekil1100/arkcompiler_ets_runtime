@@ -25,9 +25,18 @@
 namespace panda::ecmascript::kungfu {
 class MCRLowering : public PassVisitor {
 public:
-    MCRLowering(CompilationEnv* env, Circuit *circuit, RPOVisitor *visitor, CompilationConfig *cmpCfg, Chunk *chunk)
-        : PassVisitor(circuit, chunk, visitor), env_(env), circuit_(circuit), acc_(circuit),
-          builder_(circuit, cmpCfg), glue_(acc_.GetGlueFromArgList())
+    MCRLowering(CompilationEnv* env,
+                Circuit* circuit,
+                RPOVisitor* visitor,
+                CompilationConfig* cmpCfg,
+                Chunk* chunk,
+                const MethodLiteral* methodLiteral)
+        : PassVisitor(circuit, chunk, visitor),
+          env_(env),
+          circuit_(circuit),
+          acc_(circuit, methodLiteral),
+          builder_(circuit, cmpCfg),
+          glue_(acc_.GetGlueFromArgList())
     {
     }
     ~MCRLowering() = default;

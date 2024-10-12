@@ -266,6 +266,7 @@ template("libark_jsruntime_common_set") {
         "JIT_ESCAPE_ENABLE",
         "AOT_ESCAPE_ENABLE",
         "OHOS_GET_PARAMETER",
+        "OHOS_FUNCTION_TIMER_ENABLE",
       ]
     }
 

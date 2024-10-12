@@ -19,6 +19,7 @@ namespace panda::ecmascript {
 void PandaRuntimeTimer::Start(PandaRuntimeCallerStat *callerStat, PandaRuntimeTimer *parent)
 {
     parent_ = parent;
+    // actually, this is callee stat not caller stat
     callerStat_ = callerStat;
     uint64_t nowTime = Now();
     if (parent != nullptr) {

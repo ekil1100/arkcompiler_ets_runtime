@@ -23,11 +23,15 @@
 namespace panda::ecmascript::kungfu {
 class NTypeHCRLowering : public PassVisitor {
 public:
-    NTypeHCRLowering(Circuit *circuit, RPOVisitor *visitor, PassContext *ctx, const CString &recordName,
-                     const MethodLiteral *methodLiteral, Chunk* chunk)
+    NTypeHCRLowering(Circuit* circuit,
+                     RPOVisitor* visitor,
+                     PassContext* ctx,
+                     const CString& recordName,
+                     const MethodLiteral* methodLiteral,
+                     Chunk* chunk)
         : PassVisitor(circuit, chunk, visitor),
           circuit_(circuit),
-          acc_(circuit),
+          acc_(circuit, methodLiteral),
           compilationEnv_(ctx->GetCompilationEnv()),
           builder_(circuit, ctx->GetCompilerConfig()),
           dependEntry_(circuit->GetDependRoot()),
@@ -36,7 +40,9 @@ public:
           methodLiteral_(methodLiteral),
           profiling_(ctx->GetCompilerConfig()->IsProfiling()),
           traceBc_(ctx->GetCompilerConfig()->IsTraceBC()),
-          glue_(acc_.GetGlueFromArgList()) {}
+          glue_(acc_.GetGlueFromArgList())
+    {
+    }
 
     ~NTypeHCRLowering() = default;
     GateRef VisitGate(GateRef gate) override;

@@ -449,6 +449,7 @@ public:
                  const std::vector<GateRef> &args, GateRef hirGate, const char* comment = nullptr);
     GateRef NoLabelCallRuntime(GateRef glue, GateRef depend, size_t index, std::vector<GateRef> &args, GateRef hirGate);
 
+    void StartCallTimerForIntOnly(GateRef glue, GateRef gate, const std::vector<GateRef>& args, bool useLabel);
     void StartCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef> &args, bool useLabel);
     void EndCallTimer(GateRef glue, GateRef gate, const std::vector<GateRef> &args, bool useLabel);
     GateRef GetCallBuiltinId(GateRef method);

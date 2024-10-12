@@ -441,13 +441,13 @@ void Deoptimizier::Dump(JSTaggedValue callTarget, kungfu::DeoptType type, size_t
         }
     }
     if (traceDeopt_) {
+        const uint8_t* pc = GetMethod(callTarget)->GetBytecodeArray() + pc_.at(depth);
+        BytecodeInstruction inst(pc);
+        LOG_COMPILER(INFO) << inst;
         std::string checkType = DisplayItems(type);
         LOG_TRACE(INFO) << "Check Type: " << checkType;
         std::string data = JsStackInfo::BuildJsStackTrace(thread_, true);
         LOG_COMPILER(INFO) << "Deoptimize" << data;
-        const uint8_t *pc = GetMethod(callTarget)->GetBytecodeArray() + pc_.at(depth);
-        BytecodeInstruction inst(pc);
-        LOG_COMPILER(INFO) << inst;
     }
 }
 

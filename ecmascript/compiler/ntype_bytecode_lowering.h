@@ -22,10 +22,14 @@
 namespace panda::ecmascript::kungfu {
 class NTypeBytecodeLowering {
 public:
-    NTypeBytecodeLowering(Circuit *circuit, PassContext *ctx,
-                          bool enableLog, const std::string& name, const CString& recordName)
+    NTypeBytecodeLowering(Circuit* circuit,
+                          PassContext* ctx,
+                          bool enableLog,
+                          const std::string& name,
+                          const CString& recordName,
+                          const MethodLiteral* methodLiteral)
         : circuit_(circuit),
-          acc_(circuit),
+          acc_(circuit, methodLiteral),
           builder_(circuit, ctx->GetCompilerConfig()),
           ptManager_(ctx->GetPTManager()),
           jsPandaFile_(ctx->GetJSPandaFile()),
@@ -36,7 +40,9 @@ public:
           recordName_(recordName),
           glue_(acc_.GetGlueFromArgList()),
           argAcc_(circuit),
-          compilationEnv_(ctx->GetCompilationEnv()) {}
+          compilationEnv_(ctx->GetCompilationEnv())
+    {
+    }
 
     ~NTypeBytecodeLowering() = default;
 

@@ -564,6 +564,8 @@ private:
     V(TimeClip)                                 \
     V(SetDateValues)                            \
     V(CallReturnWithArgv)                       \
+    V(StartCallTimerForNativeCall)              \
+    V(EndCallTimerForNativeCall)                \
     V(StartCallTimer)                           \
     V(EndCallTimer)                             \
     V(GetSingleCharCodeByIndex)                 \

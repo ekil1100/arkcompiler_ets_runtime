@@ -807,6 +807,7 @@ void TypedHCRLowering::LowerCallPrivateGetter(GateRef gate, GateRef glue)
     GateRef accessor = acc_.GetValueIn(gate, 1);
 
     DEFVALUE(result, (&builder_), VariableType::JS_ANY(), builder_.UndefineConstant());
+    builder_.StartCallTimer(glue, gate, {accessor}, true);
     result = CallAccessor(glue, gate, accessor, receiver, AccessorMode::GETTER);
     ReplaceHirWithPendingException(gate, glue, builder_.GetState(), builder_.GetDepend(), *result);
 }
@@ -819,6 +820,7 @@ void TypedHCRLowering::LowerCallPrivateSetter(GateRef gate, GateRef glue)
     GateRef accessor = acc_.GetValueIn(gate, 1);
     GateRef value = acc_.GetValueIn(gate, 2);
 
+    builder_.StartCallTimer(glue, gate, {accessor}, true);
     CallAccessor(glue, gate, accessor, receiver, AccessorMode::SETTER, value);
     ReplaceHirWithPendingException(gate, glue, builder_.GetState(), builder_.GetDepend(), Circuit::NullGate());
 }
@@ -853,6 +855,7 @@ void TypedHCRLowering::LowerCallGetter(GateRef gate, GateRef glue)
             BRANCH_CIR(builder_.IsSpecial(getter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callGetter);
             builder_.Bind(&callGetter);
             {
+                builder_.StartCallTimer(glue, gate, {getter}, true);
                 result = CallAccessor(glue, gate, getter, receiver, AccessorMode::GETTER);
                 builder_.Jump(&exit);
             }
@@ -943,6 +946,7 @@ void TypedHCRLowering::LowerCallSetter(GateRef gate, GateRef glue)
             BRANCH_CIR(builder_.IsSpecial(setter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callSetter);
             builder_.Bind(&callSetter);
             {
+                builder_.StartCallTimer(glue, gate, {setter}, true);
                 CallAccessor(glue, gate, setter, receiver, AccessorMode::SETTER, value);
                 builder_.Jump(&exit);
             }
@@ -1466,7 +1470,7 @@ GateRef TypedHCRLowering::IntToTaggedIntPtr(GateRef x)
 
 void TypedHCRLowering::LowerTypedCallBuitin(GateRef gate)
 {
-    BuiltinLowering lowering(circuit_);
+    BuiltinLowering lowering(circuit_, methodLiteral_);
     lowering.LowerTypedCallBuitin(gate);
 }
 
@@ -1566,7 +1570,7 @@ void TypedHCRLowering::LowerCallTargetCheck(GateRef gate)
     Environment env(gate, circuit_, &builder_);
     GateRef frameState = GetFrameState(gate);
 
-    BuiltinLowering lowering(circuit_);
+    BuiltinLowering lowering(circuit_, methodLiteral_);
     GateRef funcheck = lowering.LowerCallTargetCheck(&env, gate);
     GateRef check = lowering.CheckPara(gate, funcheck);
     builder_.DeoptCheck(check, frameState, DeoptType::NOTCALLTGT1);
@@ -3069,6 +3073,7 @@ void TypedHCRLowering::LowerMonoCallGetterOnProto(GateRef gate, GateRef glue)
             BRANCH_CIR(builder_.IsSpecial(getter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callGetter);
             builder_.Bind(&callGetter);
             {
+                builder_.StartCallTimer(glue, gate, {getter}, true);
                 result = CallAccessor(glue, gate, getter, receiver, AccessorMode::GETTER);
                 builder_.Jump(&exit);
             }
@@ -3160,6 +3165,7 @@ void TypedHCRLowering::LowerMonoStorePropertyLookUpProto(GateRef gate, GateRef g
                 BRANCH_CIR(builder_.IsSpecial(setter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callSetter);
                 builder_.Bind(&callSetter);
                 {
+                    builder_.StartCallTimer(glue, gate, {setter}, true);
                     CallAccessor(glue, gate, setter, receiver, AccessorMode::SETTER, value);
                     builder_.Jump(&exit);
                 }
@@ -3234,6 +3240,7 @@ void TypedHCRLowering::LowerMonoStoreProperty(GateRef gate, GateRef glue)
                         BRANCH_CIR(builder_.IsSpecial(setter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callSetter);
                         builder_.Bind(&callSetter);
                         {
+                            builder_.StartCallTimer(glue, gate, {setter}, true);
                             CallAccessor(glue, gate, setter, receiver, AccessorMode::SETTER, value);
                             builder_.Jump(&exit);
                         }
@@ -3274,6 +3281,7 @@ void TypedHCRLowering::LowerMonoStoreProperty(GateRef gate, GateRef glue)
                     BRANCH_CIR(builder_.IsSpecial(setter, JSTaggedValue::VALUE_UNDEFINED), &exit, &callSetter);
                     builder_.Bind(&callSetter);
                     {
+                        builder_.StartCallTimer(glue, gate, {setter}, true);
                         CallAccessor(glue, gate, setter, receiver, AccessorMode::SETTER, value);
                         builder_.Jump(&exit);
                     }

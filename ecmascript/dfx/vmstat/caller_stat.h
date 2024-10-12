@@ -114,6 +114,16 @@ public:
         callerStat_->UpdateState(elapsed_);
     }
 
+    PandaRuntimeCallerStat* GetStat() const
+    {
+        return callerStat_;
+    }
+
+    PandaRuntimeTimer* GetParent() const
+    {
+        return parent_;
+    }
+
 private:
     static constexpr uint64_t NANOSECONDSINSECOND = 1000000000;
     PandaRuntimeTimer *Stop();

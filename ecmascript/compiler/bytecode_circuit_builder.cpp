@@ -927,6 +927,7 @@ GateRef BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb)
     ASSERT(bb.succs.empty());
     auto &iterator = bb.GetBytecodeIterator();
     const BytecodeInfo& bytecodeInfo = iterator.GetBytecodeInfo();
+    EndFunctionCallTimer();
     GateRef state = frameStateBuilder_.GetCurrentState();
     GateRef depend = frameStateBuilder_.GetCurrentDepend();
     GateRef gate = Circuit::NullGate();
@@ -947,6 +948,28 @@ GateRef BytecodeCircuitBuilder::NewReturn(BytecodeRegion &bb)
         jsGatesToByteCode_[gate] = iterator.Index();
     }
     return gate;
+}
+
+void BytecodeCircuitBuilder::StartFunctionCallTimer()
+{
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    GateRef state = frameStateBuilder_.GetCurrentState();
+    GateRef depend = frameStateBuilder_.GetCurrentDepend();
+    GateRef frameArgs = argAcc_.GetFrameArgs();
+    auto timer = circuit_->NewGate(circuit_->StartCallTimer(), {state, depend, frameArgs});
+    frameStateBuilder_.UpdateStateDepend(state, timer);
+#endif
+}
+
+void BytecodeCircuitBuilder::EndFunctionCallTimer()
+{
+#if ECMASCRIPT_ENABLE_FUNCTION_CALL_TIMER
+    GateRef state = frameStateBuilder_.GetCurrentState();
+    GateRef depend = frameStateBuilder_.GetCurrentDepend();
+    GateRef frameArgs = argAcc_.GetFrameArgs();
+    auto timer = circuit_->NewGate(circuit_->EndCallTimer(), {state, depend, frameArgs});
+    frameStateBuilder_.UpdateStateDepend(state, timer);
+#endif
 }
 
 void BytecodeCircuitBuilder::NewByteCode(BytecodeRegion &bb)
@@ -1003,6 +1026,7 @@ void BytecodeCircuitBuilder::BuildSubCircuit()
                 bb.dependCache = stackCheck;
                 frameStateBuilder_.UpdateStateDepend(stackCheck, stackCheck);
             }
+            StartFunctionCallTimer();
             auto &bbNext = RegionAt(bb.id + 1);
             frameStateBuilder_.MergeIntoSuccessor(bb, bbNext);
             bbNext.expandedPreds.push_back({bb.id, bb.end, false});

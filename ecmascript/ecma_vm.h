@@ -594,13 +594,6 @@ public:
         LOG_ECMA_MEM(FATAL) << "Out of Memory";
     }
 
-    void DumpCallTimeInfo();
-
-    FunctionCallTimer *GetCallTimer() const
-    {
-        return callTimer_;
-    }
-
     EcmaStringTable *GetEcmaStringTable() const
     {
         ASSERT(stringTable_ != nullptr);
@@ -815,6 +808,16 @@ public:
 
     void PUBLIC_API PrintAOTSnapShotStats();
 
+    std::shared_ptr<FunctionCallTimer> GetFunctionCallTimer() const
+    {
+        return functionCallTimer_;
+    }
+
+    void SetFunctionCallTimer(std::shared_ptr<FunctionCallTimer> functionCallTimer)
+    {
+        functionCallTimer_ = functionCallTimer;
+    }
+
 protected:
 
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo) const;
@@ -901,7 +904,6 @@ private:
 #if defined(ECMASCRIPT_SUPPORT_TRACING)
     Tracing *tracing_ {nullptr};
 #endif
-    FunctionCallTimer *callTimer_ {nullptr};
     JSObjectResizingStrategy *strategy_ {nullptr};
 
     // For Native MethodLiteral
@@ -916,6 +918,8 @@ private:
 
     //AOT File Manager
     AOTFileManager *aotFileManager_ {nullptr};
+
+    std::shared_ptr<FunctionCallTimer> functionCallTimer_ {nullptr};
 
     // c++ call js
     size_t callDepth_ {0};

@@ -652,6 +652,8 @@ private:
     void NewJSGate(BytecodeRegion &bb);
     void NewJump(BytecodeRegion &bbd);
     GateRef NewReturn(BytecodeRegion &bb);
+    void StartFunctionCallTimer();
+    void EndFunctionCallTimer();
     void NewByteCode(BytecodeRegion &bb);
     void MergeThrowGate(BytecodeRegion &bb, uint32_t bcIndex);
     void MergeExceptionGete(BytecodeRegion &bb, const BytecodeInfo& bytecodeInfo, uint32_t bcIndex);
